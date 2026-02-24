@@ -6,5 +6,5 @@ export const authApi = {
     login: (data: LoginFormValues) => http.post('/auth/login', data),
     logout: () => http.post('/auth/logout'),
     checkAuth: () => http.get('/auth/check'),
-    register: (data: LoginFormValues) => http.post('/auth/register', data)
+    register: (data: LoginFormValues) => http.post('/auth/register', data),
 }

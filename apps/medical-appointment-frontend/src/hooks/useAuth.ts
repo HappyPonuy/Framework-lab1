@@ -1,40 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState} from 'react';
+import { useNavigate } from 'react-router-dom'
 import { authApi } from "../api/authApi.ts";
-import type { LoginFormValues } from "../types/auth.types.ts";
-
-interface User {
-    id: number;
-    username: string;
-    email: string;
-    fio: string;
-}
+import type {LoginFormValues} from "../types/auth.types.ts";
+import {useAuthContext} from "../content/AuthContext.tsx";
 
 export function useAuth() {
-    const [user, setUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { setUser } = useAuthContext();
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        let cancelled = false;
-
-        authApi.checkAuth()
-            .then(response => {
-                if (!cancelled) {
-                    setUser(response.data);
-                    setError(null);
-                }
-            })
-            .catch(() => {
-                if (!cancelled) {
-                    setUser(null);
-                }
-            })
-            .finally(() => {
-                if (!cancelled) setLoading(false);
-            });
-
-        return () => { cancelled = true; };
-    }, []);
 
     const login = async (data: LoginFormValues) => {
         setLoading(true);
@@ -42,6 +16,7 @@ export function useAuth() {
         try {
             const response = await authApi.login(data);
             setUser(response.data);
+            navigate('/');
         } catch (err: any) {
             setError(err.response?.data?.message || 'Ошибка входа');
         } finally {
@@ -55,6 +30,7 @@ export function useAuth() {
         try {
             const response = await authApi.register(data);
             setUser(response.data);
+            navigate('/');
         } catch (err: any) {
             setError(err.response?.data?.message || 'Ошибка регистрации');
         } finally {
@@ -63,16 +39,10 @@ export function useAuth() {
     };
 
     const logout = async () => {
-        setLoading(true);
-        try {
-            await authApi.logout();
-        } finally {
-            setUser(null);
-            setLoading(false);
-        }
-    };
+        await authApi.logout()
+        setUser(null)
+        navigate('/auth')
+    }
 
-    const isAuthenticated = user !== null;
-
-    return { user, loading, error, isAuthenticated, login, logout, register };
+    return { loading, error, login, logout, register };
 }

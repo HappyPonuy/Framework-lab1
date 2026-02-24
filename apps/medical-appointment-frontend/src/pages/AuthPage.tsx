@@ -1,5 +1,6 @@
 import { type FormEvent, type ChangeEvent, useState } from 'react'
-import type {LoginFormValues} from './types/auth.types';
+import type {LoginFormValues} from '../types/auth.types.ts';
+import { useNavigate } from 'react-router-dom'
 
 function AuthPage() {
     const [type, setType] = useState<'login' | 'register'>('login');
@@ -9,6 +10,7 @@ function AuthPage() {
     })
     const [error, setError] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(false)
+    const navigate = useNavigate();
 
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = event.target;
@@ -32,6 +34,7 @@ function AuthPage() {
                     return;
                 }
                 alert(`Email: ${values.email}, Password: ${values.password}`);
+                navigate('/');
             } else {
                 if (!values.email || !values.password || !values.fio || !values.confirmPassword) {
                     setError('Проверьте, что все обязательные поля заполнены.');
@@ -42,6 +45,7 @@ function AuthPage() {
                     return;
                 }
                 alert(`Email: ${values.email}, ФИО: ${values.fio}, Password: ${values.password}`);
+                navigate('/');
             }
         }, 1000);
     }
@@ -50,7 +54,6 @@ function AuthPage() {
         <div className="min-h-screen flex items-center justify-center px-4 py-10">
             <div className="w-full max-w-sm">
 
-                {/* Логотип */}
                 <div className="flex flex-col items-center mb-8">
                     <div className="h-20 w-20 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30 mb-3">
                         <svg
