@@ -11,6 +11,8 @@ declare global {
             JWT_REFRESH_SALT: string;
             DB_USER: string;
             DB_PASS: string;
+            DB_HOST: string;
+            DB_PORT: string;
         }
     }
 }
