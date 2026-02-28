@@ -28,7 +28,7 @@ class JWTService {
         return `${data}.${signature}`;
     };
 
-    static verify(token: string, secret: string): object | never {
+    static verify(token: string, secret: string): JWTPayload {
         const [encHeader, encPayload, signature] = token.split(".");
         if (!encHeader || !encPayload || !signature) {
             throw new Error(`[JWTERR2] Invalid token passed. Token: ${token}`);
@@ -40,9 +40,9 @@ class JWTService {
             throw new Error(`[JWTERR2] Invalid signature. Token: ${token}`);
         }
 
-        const payload = JSON.parse(Buffer.from(encPayload, "base64url").toString("utf8"));
+        const payload: JWTPayload = JSON.parse(Buffer.from(encPayload, "base64url").toString("utf8"));
 
-        const ver = process.env.JWT_VER;
+        const ver = env.JWT_VER;
         if (!payload.ver || ver !== payload.ver) {
             throw new Error(`[JWTERR2] Invalid token version. Token: ${token}`);
         }
