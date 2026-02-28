@@ -4,6 +4,12 @@
     // File Layout
      "rootDir": "./src",
      "outDir": "./dist",
+     "paths": {
+      "@custom_types/*": ["./src/types/*.d.ts"],
+      "@config/*": ["./src/config/*.ts"],
+      "@modules/*": ["./src/modules/*/index.ts"],
+      "@errors/*": ["./src/errors/*.ts"]
+     },
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
@@ -39,7 +45,7 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
-    "esModuleInterop": true,
+    "esModuleInterop": true
   },
-  "include": ["src"]
+  "include": ["src", "environment.d.ts"]
 }
