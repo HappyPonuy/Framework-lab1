@@ -1,6 +1,6 @@
 import * as crypto from "crypto";
 
-class PasswordService {
+export class PasswordHandler {
     static hash(pass: string): string {
         const salt = crypto.randomBytes(16).toString("hex");
         const hashBuf = crypto.scryptSync(pass, salt, 64);
@@ -14,6 +14,4 @@ class PasswordService {
         const pass1HashBuf = Buffer.from(pass1Hash as string, "hex");
         return crypto.timingSafeEqual(pass1HashBuf, pass2HashBuf);
     };
-};
-
-module.exports = PasswordService;
+}

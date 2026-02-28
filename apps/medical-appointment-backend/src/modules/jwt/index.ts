@@ -7,7 +7,7 @@ function bufToB64URL(input: Buffer): string {
     return input.toString("base64url");
 }
 
-class JWTService {
+export class JWTHandler {
     static sign(payload: UserInfo, secret: string): string {
         const now = Math.floor(Date.now() / 1000);
         const header = {alg: "HS256", typ: "JWT"};
@@ -55,5 +55,3 @@ class JWTService {
         return payload;
     };
 }
-
-module.exports = JWTService;
