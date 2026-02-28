@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config({ path: `.env.${process.env.NODE_ENV}` });
+
 const toInt = (key: string, val: string) => {
     const n = parseInt(val, 10);
     if (isNaN(n)) throw new Error(`Env variable ${key} must be of type 'number', got: '${val}'`);
@@ -13,4 +16,6 @@ export const env = {
     JWT_REFRESH_SALT:   process.env.JWT_REFRESH_SALT,
     DB_USER:            process.env.DB_USER,
     DB_PASS:            process.env.DB_PASS,
+    DB_HOST:            process.env.DB_HOST,
+    DB_PORT:            process.env.DB_PORT
 } as const;
