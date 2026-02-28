@@ -8,7 +8,7 @@ function bufToB64URL(input: Buffer): string {
 }
 
 class JWTService {
-    public sign(payload: UserInfo, secret: string): string {
+    static sign(payload: UserInfo, secret: string): string {
         const now = Math.floor(Date.now() / 1000);
         const header = {alg: "HS256", typ: "JWT"};
         const fullPayload: JWTPayload = {
@@ -28,7 +28,7 @@ class JWTService {
         return `${data}.${signature}`;
     };
 
-    public verify(token: string, secret: string): object | never {
+    static verify(token: string, secret: string): object | never {
         const [encHeader, encPayload, signature] = token.split(".");
         if (!encHeader || !encPayload || !signature) {
             throw new Error(`[JWTERR2] Invalid token passed. Token: ${token}`);
