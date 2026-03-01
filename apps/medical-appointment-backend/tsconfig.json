@@ -1,16 +1,16 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
-    // File Layout
-     "rootDir": "./src",
-     "outDir": "./dist",
-     "paths": {
-      "@custom_types/*": ["./src/types/*.d.ts"],
-      "@config/*": ["./src/config/*.ts"],
-      "@modules/*": ["./src/modules/*/index.ts"],
-      "@errors/*": ["./src/errors/*.ts"]
-     },
-
+    "rootDir": "../../",
+    "outDir": "./dist",
+    "paths": {
+        "@shared/*": ["../../packages/shared/*"],
+        "@contracts/*": ["../../packages/shared/types/contracts/*"],
+        "@custom_types/*": ["./src/types/*.d.ts"],
+        "@config/*": ["./src/config/*.ts"],
+        "@modules/*": ["./src/modules/*/index.ts"],
+        "@errors/*": ["./src/errors/*.ts"],
+    },
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
     "module": "nodenext",
@@ -21,11 +21,6 @@
     // "types": ["node"],
     // and npm install -D @types/node
 
-    // Other Outputs
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
@@ -34,9 +29,14 @@
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // "noUnusedParameters": true,
     // "noFallthroughCasesInSwitch": true,
     // "noPropertyAccessFromIndexSignature": true,
+
+    "composite": true,
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
 
     // Recommended Options
     "strict": true,
@@ -47,5 +47,5 @@
     "skipLibCheck": true,
     "esModuleInterop": true
   },
-  "include": ["src", "environment.d.ts"]
+  "include": ["src", "environment.d.ts", "../../packages/shared"]
 }
