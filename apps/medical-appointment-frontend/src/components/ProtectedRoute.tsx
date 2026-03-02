@@ -1,8 +1,9 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import {useAuthContext} from "../content/AuthContext.tsx";
+import { useAuth } from "../content/AuthContext.tsx";
 
 export function ProtectedRoute(){
-    const {isAuthenticated, loading} = useAuthContext();
+    const { user, loading } = useAuth();
+    const isAuthenticated = user !== null;
 
     if (loading) {
         return (
