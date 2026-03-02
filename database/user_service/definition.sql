@@ -14,27 +14,17 @@ CREATE TABLE IF NOT EXISTS patients (
     updated_at  TIMESTAMP       DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS doctor_specialties (
-    id              SERIAL  PRIMARY KEY,
-    specialty_name  TEXT    NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS doctors (
     id              UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id         UUID        NOT NULL,
-    specialty_id    INTEGER     NOT NULL REFERENCES doctor_specialties(id) ON DELETE SET NULL,
+    specialty       TEXT        NOT NULL,
     first_name      TEXT        NOT NULL,
     last_name       TEXT        NOT NULL,
     patronymic      TEXT,
     notes           TEXT,
-    is_active       BOOLEAN     DEFAULT FALSE
-);
-
-CREATE TABLE IF NOT EXISTS schedules (
-    id           UUID       PRIMARY KEY,
-    doctor_id    UUID       UNIQUE NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
-    work_days    INTEGER    NOT NULL,
-    start_time   TIME       NOT NULL,
-    end_time     TIME       NOT NULL,
-    slot_minutes INTEGER    NOT NULL DEFAULT 30
+    is_active       BOOLEAN     DEFAULT FALSE,
+    work_days       INTEGER     NOT NULL,
+    shift_start     TIME        NOT NULL,
+    shift_end       TIME        NOT NULL,
+    slot_minutes    INTEGER     NOT NULL DEFAULT 30
 );
