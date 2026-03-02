@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { http } from '../api/http.ts';
 import type { User, AuthContextFullType, LoginResult } from '../types/auth.types.ts';
 import type { LoginResponseDto } from '@contracts/auth/login.ts';
@@ -15,6 +15,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [token, setTokenState] = useState<string>(localStorage.getItem('token') ?? '');
     const [loading, setLoading] = useState<boolean>(true);
     const navigate = useNavigate();
+    const location = useLocation();
+    //Временное решение для публичных роутов, которые не требуют авторизации.
+    const PUBLIC_PATHS = ['/auth', '/patient', '/doctor', '/admin'];
 
     const setToken = (newToken: string) => {
         setTokenState(newToken);
@@ -104,7 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (!token) {
             setLoading(false);
-            navigate('/auth');
+            if (!PUBLIC_PATHS.includes(location.pathname)) {
+                navigate('/auth');
+            }
             return;
         }
 
