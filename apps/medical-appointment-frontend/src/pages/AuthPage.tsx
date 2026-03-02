@@ -1,6 +1,6 @@
 import { type FormEvent, type ChangeEvent, useState } from 'react'
-import type {LoginFormValues} from '../types/auth.types.ts';
-import { useNavigate } from 'react-router-dom'
+import type { LoginFormValues } from '../types/auth.types.ts';
+import { useAuth } from '../hooks/useAuth.ts';
 
 function AuthPage() {
     const [type, setType] = useState<'login' | 'register'>('login');
@@ -8,9 +8,7 @@ function AuthPage() {
         email: '',
         password: '',
     })
-    const [error, setError] = useState<string | null>(null)
-    const [isLoading, setIsLoading] = useState(false)
-    const navigate = useNavigate();
+    const { login, register, loading: isLoading, error, clearError } = useAuth();
 
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = event.target;
@@ -21,33 +19,14 @@ function AuthPage() {
         }))
     }
 
-    const handleSubmit = (event: FormEvent<HTMLFormElement>)=> {
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setError(null);
-        setIsLoading(true);
 
-        setTimeout(() => {
-            setIsLoading(false);
-            if (type === 'login') {
-                if (!values.email || !values.password) {
-                    setError('Проверьте, что все обязательные поля заполнены.');
-                    return;
-                }
-                alert(`Email: ${values.email}, Password: ${values.password}`);
-                navigate('/');
-            } else {
-                if (!values.email || !values.password || !values.fio || !values.confirmPassword) {
-                    setError('Проверьте, что все обязательные поля заполнены.');
-                    return;
-                }
-                if (values.password !== values.confirmPassword) {
-                    setError('Пароли не совпадают.');
-                    return;
-                }
-                alert(`Email: ${values.email}, ФИО: ${values.fio}, Password: ${values.password}`);
-                navigate('/');
-            }
-        }, 1000);
+        if (type === 'login') {
+            await login(values);
+        } else {
+            await register(values);
+        }
     }
 
     return (
@@ -207,8 +186,7 @@ function AuthPage() {
                     <button
                         type="button"
                         className="font-semibold text-blue-600 hover:underline cursor-pointer"
-                        onClick={() => setType(type === 'login' ? 'register' : 'login')}
-                    >
+                        onClick={() => { setType(type === 'login' ? 'register' : 'login'); clearError?.(); }}>
                         {type === 'login' ? 'Зарегистрироваться' : 'Войти'}
                     </button>
                 </p>
