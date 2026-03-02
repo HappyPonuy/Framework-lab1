@@ -1,10 +1,20 @@
 import './App.css'
 import AuthPage from "./pages/AuthPage.tsx";
-import {AuthProvider} from "./content/AuthContext.tsx";
+import { AuthProvider } from "./content/AuthContext.tsx";
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import {ProtectedRoute} from "./components/ProtectedRoute.tsx";
+import { ProtectedRoute } from "./components/ProtectedRoute.tsx";
 import AdminPage from "./pages/AdminPage.tsx";
+import DoctorPage from "./pages/DoctorPage.tsx";
+import HomePage from "./pages/HomePage.tsx";
+import { useAuth } from "./content/AuthContext.tsx";
 
+
+function RoleRouter() {
+    const { user } = useAuth()
+    if (user?.role === 'A') return <AdminPage />
+    if (user?.role === 'D') return <DoctorPage />
+    return <HomePage />
+}
 
 function App() {
 
@@ -13,10 +23,16 @@ function App() {
             <AuthProvider>
                 <Routes>
                     <Route path="/auth" element={<AuthPage />} />
+
+                    <Route path="/patient" element={<HomePage />} />
+                    <Route path="/doctor"  element={<DoctorPage />} />
+                    <Route path="/admin"   element={<AdminPage />} />
+
                     <Route element={<ProtectedRoute />}>
-                        <Route path="/" element={<AdminPage />} />
+                        <Route path="/" element={<RoleRouter />} />
                     </Route>
-                    <Route path="/*" element={<Navigate to="/" replace />} />
+
+                    <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </AuthProvider>
         </BrowserRouter>
