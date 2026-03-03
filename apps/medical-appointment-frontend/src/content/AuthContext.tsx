@@ -16,8 +16,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState<boolean>(true);
     const navigate = useNavigate();
     const location = useLocation();
-    //Временное решение для публичных роутов, которые не требуют авторизации.
-    const PUBLIC_PATHS = ['/auth', '/patient', '/doctor', '/admin'];
+    const PUBLIC_PATHS = ['/', '/patient', '/doctor', '/admin'];
 
     const setToken = (newToken: string) => {
         setTokenState(newToken);

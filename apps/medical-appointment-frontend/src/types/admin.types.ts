@@ -50,5 +50,6 @@ export interface AdminContextType {
     error: string | null;
     toggleDoctorActive: (doctorId: string, isActive: boolean) => Promise<void>;
     deleteAppointment: (appointmentId: string) => Promise<void>;
+    createDoctor: (dto: CreateDoctorDto) => Promise<void>;
     refresh: () => Promise<void>;
 }

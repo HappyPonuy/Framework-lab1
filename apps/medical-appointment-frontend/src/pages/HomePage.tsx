@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../content/AuthContext.tsx'
 import { usePatient, PatientProvider } from '../content/PatientContext.tsx'
 import type { DoctorInfo } from '../types/patient.types.ts'
-import type { CreateAppointmentDto } from '../types/patient.types.ts'
+import type { CreateAppointmentDto, UpdatePatientDto } from '../types/patient.types.ts'
 
 function MedLogo() {
     return (
@@ -26,14 +26,16 @@ function MedLogo() {
 
 function HomePageContent() {
     const { user, logout } = useAuth()
-    const { patient, appointments, doctors, loading, error, bookAppointment, cancelAppointment } = usePatient()
+    const { patient, appointments, doctors, loading, error, bookAppointment, cancelAppointment, updateProfile } = usePatient()
 
     const [activeTab, setActiveTab] = useState<'appointments' | 'doctors' | 'profile'>('appointments')
     const [showBookingModal, setShowBookingModal] = useState(false)
     const [selectedDoctor, setSelectedDoctor] = useState<DoctorInfo | null>(null)
-    const [selectedDate, setSelectedDate] = useState('')
     const [selectedTime, setSelectedTime] = useState('')
     const [booking, setBooking] = useState(false)
+    const [showEditModal, setShowEditModal] = useState(false)
+    const [editForm, setEditForm] = useState<UpdatePatientDto | null>(null)
+    const [saving, setSaving] = useState(false)
 
     const tabs = [
         { key: 'appointments', label: 'Мои записи' },
@@ -43,23 +45,46 @@ function HomePageContent() {
 
     const handleBook = (doctor: DoctorInfo) => {
         setSelectedDoctor(doctor)
-        setSelectedDate('')
         setSelectedTime('')
         setShowBookingModal(true)
     }
-
     const handleConfirmBook = async () => {
-        if (!selectedDoctor || !selectedDate || !selectedTime) return
+        if (!selectedDoctor || !selectedTime) return
         setBooking(true)
         try {
             const dto: CreateAppointmentDto = {
                 doctorId: selectedDoctor.id,
-                startTime: `${selectedDate}T${selectedTime}:00Z`,
+                startTime: selectedTime,
             }
             await bookAppointment(dto)
             setShowBookingModal(false)
         } finally {
             setBooking(false)
+        }
+    }
+
+    const handleOpenEdit = () => {
+        if (!patient) return
+        setEditForm({
+            email:      patient.email,
+            phone:      patient.phone,
+            firstName:  patient.firstName,
+            lastName:   patient.lastName,
+            patronymic: patient.patronymic,
+            birthDate:  patient.birthDate,
+            gender:     patient.gender,
+        })
+        setShowEditModal(true)
+    }
+
+    const handleSaveProfile = async () => {
+        if (!editForm) return
+        setSaving(true)
+        try {
+            await updateProfile(editForm)
+            setShowEditModal(false)
+        } finally {
+            setSaving(false)
         }
     }
 
@@ -159,9 +184,6 @@ function HomePageContent() {
                             </div>
                         ) : (
                             appointments.map(a => {
-                                const dt = new Date(a.startTime)
-                                const dateStr = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
-                                const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
                                 return (
                                     <div key={a.id} className="bg-white rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm border border-blue-50">
                                         <div className="flex items-center gap-4">
@@ -172,13 +194,13 @@ function HomePageContent() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-semibold text-slate-800">{a.doctorName}</p>
-                                                <p className="text-xs text-slate-400">{a.specialtyName} · {dateStr} в {timeStr}</p>
+                                                <p className="text-xs text-slate-400">{a.specialtyName} · {a.startTime}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => cancelAppointment(a.id)}
-                                                className="text-xs text-red-400 hover:text-red-600 transition px-1"
+                                                className="text-xs text-red-400 hover:text-red-600 transition px-1 cursor-pointer"
                                                 title="Отменить"
                                             >
                                                 ✕
@@ -265,7 +287,9 @@ function HomePageContent() {
                                 </div>
                             ))}
                         </div>
-                        <button className="w-full rounded-xl border border-blue-200 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition">
+                        <button
+                            onClick={handleOpenEdit}
+                            className="w-full rounded-xl border border-blue-200 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition">
                             Редактировать профиль
                         </button>
                     </div>
@@ -280,16 +304,6 @@ function HomePageContent() {
                             {selectedDoctor.lastName} {selectedDoctor.firstName} · {selectedDoctor.specialtyName}
                         </p>
                         <div className="space-y-3">
-                            <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Дата</label>
-                                <input
-                                    type="date"
-                                    value={selectedDate}
-                                    onChange={e => setSelectedDate(e.target.value)}
-                                    min={new Date().toISOString().slice(0, 10)}
-                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
-                                />
-                            </div>
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Время</label>
                                 <select
@@ -313,10 +327,64 @@ function HomePageContent() {
                             </button>
                             <button
                                 onClick={handleConfirmBook}
-                                disabled={!selectedDate || !selectedTime || booking}
+                                disabled={!selectedTime || booking}
                                 className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-600/30 hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 {booking ? 'Сохранение...' : 'Подтвердить'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {showEditModal && editForm && (
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center px-4 z-50">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto">
+                        <h2 className="text-lg font-bold text-slate-900 mb-4">Редактировать профиль</h2>
+                        <div className="space-y-3">
+                            {([
+                                { label: 'Фамилия',  field: 'lastName'   as const, type: 'text' },
+                                { label: 'Имя',      field: 'firstName'  as const, type: 'text' },
+                                { label: 'Отчество', field: 'patronymic' as const, type: 'text' },
+                                { label: 'Email',    field: 'email'      as const, type: 'email' },
+                                { label: 'Телефон',  field: 'phone'      as const, type: 'tel' },
+                                { label: 'Дата рождения', field: 'birthDate' as const, type: 'date' },
+                            ] as { label: string; field: keyof UpdatePatientDto; type: string }[]).map(({ label, field, type }) => (
+                                <div key={field}>
+                                    <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">{label}</label>
+                                    <input
+                                        type={type}
+                                        value={(editForm[field] as string) ?? ''}
+                                        onChange={e => setEditForm(prev => prev ? { ...prev, [field]: e.target.value || null } : prev)}
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+                                    />
+                                </div>
+                            ))}
+                            <div>
+                                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Пол</label>
+                                <select
+                                    value={editForm.gender ?? ''}
+                                    onChange={e => setEditForm(prev => prev ? { ...prev, gender: (e.target.value as 'M' | 'F') || null } : prev)}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+                                >
+                                    <option value="">Не указан</option>
+                                    <option value="M">Мужской</option>
+                                    <option value="F">Женский</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 mt-5">
+                            <button
+                                onClick={() => setShowEditModal(false)}
+                                className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                            >
+                                Отмена
+                            </button>
+                            <button
+                                onClick={handleSaveProfile}
+                                disabled={saving}
+                                className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition disabled:opacity-50"
+                            >
+                                {saving ? 'Сохранение...' : 'Сохранить'}
                             </button>
                         </div>
                     </div>

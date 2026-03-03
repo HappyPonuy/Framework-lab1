@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../content/AuthContext.tsx'
 import { useAdmin, AdminProvider } from '../content/AdminContext.tsx'
+import type { CreateDoctorDto } from '../types/admin.types.ts'
 
 const activeMap = {
     active:   { label: 'Активен',   className: 'bg-green-50 text-green-700 border border-green-200' },
@@ -35,9 +37,13 @@ function MedLogo() {
 
 function AdminPageContent() {
     const { user, logout } = useAuth()
-    const { users, doctors, appointments, loading, error, toggleDoctorActive, deleteAppointment } = useAdmin()
+    const { users, doctors, appointments, specialties, loading, error, toggleDoctorActive, deleteAppointment, createDoctor } = useAdmin()
 
     const [activeTab, setActiveTab] = useState<'overview' | 'doctors' | 'users' | 'appointments'>('overview')
+    const [showAddDoctor, setShowAddDoctor] = useState(false)
+    const [addForm, setAddForm] = useState<CreateDoctorDto>({ userId: '', specialtyId: 0, firstName: '', lastName: '', patronymic: '', notes: '' })
+    const [addSaving, setAddSaving] = useState(false)
+    const [addError, setAddError] = useState<string | null>(null)
 
     const tabs = [
         { key: 'overview',     label: 'Обзор' },
@@ -45,6 +51,33 @@ function AdminPageContent() {
         { key: 'users',        label: 'Пользователи' },
         { key: 'appointments', label: 'Записи' },
     ] as const
+
+    const handleOpenAddDoctor = () => {
+        setAddForm({ userId: '', specialtyId: specialties[0]?.id ?? 0, firstName: '', lastName: '', patronymic: '', notes: '' })
+        setAddError(null)
+        setShowAddDoctor(true)
+    }
+
+    const handleSaveDoctor = async () => {
+        if (!addForm.firstName.trim() || !addForm.lastName.trim()) {
+            setAddError('Заполните имя и фамилию')
+            return
+        }
+        if (!addForm.userId.trim()) {
+            setAddError('Укажите ID пользователя')
+            return
+        }
+        setAddSaving(true)
+        setAddError(null)
+        try {
+            await createDoctor(addForm)
+            setShowAddDoctor(false)
+        } catch {
+            setAddError('Ошибка при создании врача')
+        } finally {
+            setAddSaving(false)
+        }
+    }
 
     if (loading) {
         return (
@@ -123,14 +156,11 @@ function AdminPageContent() {
                             <h3 className="text-sm font-semibold text-slate-700 mb-3">Последние записи</h3>
                             <div className="space-y-2">
                                 {appointments.slice(0, 3).map(a => {
-                                    const dt = new Date(a.startTime)
-                                    const dateStr = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
-                                    const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
                                     return (
                                         <div key={a.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
                                             <div>
                                                 <p className="text-sm font-medium text-slate-800">{a.patientName} → {a.doctorName}</p>
-                                                <p className="text-xs text-slate-400">{dateStr} в {timeStr}</p>
+                                                <p className="text-xs text-slate-400">{a.specialtyName} · {a.startTime}</p>
                                             </div>
                                         </div>
                                     )
@@ -144,7 +174,10 @@ function AdminPageContent() {
                     <div className="bg-white rounded-2xl shadow-sm border border-blue-50 overflow-hidden">
                         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                             <h3 className="text-sm font-semibold text-slate-700">Все врачи</h3>
-                            <button className="text-xs font-semibold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">
+                            <button
+                                onClick={handleOpenAddDoctor}
+                                className="text-xs font-semibold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition cursor-pointer"
+                            >
                                 + Добавить
                             </button>
                         </div>
@@ -169,7 +202,7 @@ function AdminPageContent() {
                                             </span>
                                             <button
                                                 onClick={() => toggleDoctorActive(d.id, !d.isActive)}
-                                                className="text-xs text-slate-400 hover:text-blue-600 transition px-2"
+                                                className="text-xs text-slate-400 hover:text-blue-600 transition px-2 cursor-pointer"
                                                 title={d.isActive ? 'Деактивировать' : 'Активировать'}
                                             >
                                                 {d.isActive ? '⏸' : '▶'}
@@ -211,19 +244,16 @@ function AdminPageContent() {
                         </div>
                         <div className="divide-y divide-slate-50">
                             {appointments.map(a => {
-                                const dt = new Date(a.startTime)
-                                const dateStr = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
-                                const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
                                 return (
                                     <div key={a.id} className="px-5 py-3.5 flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-medium text-slate-800">{a.patientName} → {a.doctorName}</p>
-                                            <p className="text-xs text-slate-400">{dateStr} в {timeStr}</p>
+                                            <p className="text-xs text-slate-400">{a.specialtyName} · {a.startTime}</p>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => deleteAppointment(a.id)}
-                                                className="text-xs text-red-400 hover:text-red-600 transition px-1"
+                                                className="text-xs text-red-400 hover:text-red-600 transition px-1 cursor-pointer"
                                                 title="Удалить"
                                             >
                                                 ✕
@@ -235,7 +265,66 @@ function AdminPageContent() {
                         </div>
                     </div>
                 )}
+
             </main>
+
+            {showAddDoctor && createPortal(
+                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center px-4 z-50">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+                        <h2 className="text-lg font-bold text-slate-900 mb-4">Добавить врача</h2>
+                        <div className="space-y-3">
+                            {([
+                                { label: 'Фамилия *',   field: 'lastName'   as const, type: 'text' },
+                                { label: 'Имя *',       field: 'firstName'  as const, type: 'text' },
+                                { label: 'Отчество',    field: 'patronymic' as const, type: 'text' },
+                                { label: 'ID пользователя *', field: 'userId' as const, type: 'text' },
+                                { label: 'Заметки',     field: 'notes'      as const, type: 'text' },
+                            ] as { label: string; field: keyof CreateDoctorDto; type: string }[]).map(({ label, field, type }) => (
+                                <div key={field}>
+                                    <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">{label}</label>
+                                    <input
+                                        type={type}
+                                        value={(addForm[field] as string) ?? ''}
+                                        onChange={e => setAddForm(prev => ({ ...prev, [field]: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+                                    />
+                                </div>
+                            ))}
+                            <div>
+                                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Специальность *</label>
+                                <select
+                                    value={addForm.specialtyId}
+                                    onChange={e => setAddForm(prev => ({ ...prev, specialtyId: Number(e.target.value) }))}
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition cursor-pointer"
+                                >
+                                    {specialties.map(s => (
+                                        <option key={s.id} value={s.id}>{s.specialtyName}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {addError && (
+                                <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{addError}</p>
+                            )}
+                        </div>
+                        <div className="flex gap-2 mt-5">
+                            <button
+                                onClick={() => setShowAddDoctor(false)}
+                                className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+                            >
+                                Отмена
+                            </button>
+                            <button
+                                onClick={handleSaveDoctor}
+                                disabled={addSaving}
+                                className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer"
+                            >
+                                {addSaving ? 'Сохранение...' : 'Добавить'}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     )
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import axios, { type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { useAuth } from '../content/AuthContext.tsx';
 import type { RefreshResponseDto } from '@contracts/auth/refresh.ts';
@@ -29,6 +29,14 @@ export const useDebounce = (
 export const useApi = (baseURL = '') => {
     const { token, setToken, logout } = useAuth();
 
+    // Стабильные ссылки — не вызывают перезапуск useEffect
+    const setTokenRef = useRef(setToken);
+    setTokenRef.current = setToken;
+    const logoutRef = useRef(logout);
+    logoutRef.current = logout;
+    const tokenRef = useRef(token);
+    tokenRef.current = token;
+
     const api: AxiosInstance = useMemo(
         () =>
             axios.create({
@@ -43,7 +51,9 @@ export const useApi = (baseURL = '') => {
 
     useEffect(() => {
         api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }, [api, token]);
 
+    useEffect(() => {
         const resInt = api.interceptors.response.use(
             (response: AxiosResponse) => response,
             async (error: unknown) => {
@@ -60,21 +70,21 @@ export const useApi = (baseURL = '') => {
                     const parsed = RefreshRequestSchema.safeParse({ token: storedRefresh });
 
                     if (!parsed.success) {
-                        await logout();
+                        await logoutRef.current();
                         return Promise.reject(error);
                     }
 
                     try {
                         const res = await refreshApi.post<RefreshResponseDto>('/auth/refresh', parsed.data);
                         const newAccessToken = res.data.access_token;
-                        setToken(newAccessToken);
+                        setTokenRef.current(newAccessToken);
                         originalReq.headers['Authorization'] = `Bearer ${newAccessToken}`;
                         return await api(originalReq);
                     } catch (refreshError: unknown) {
                         const refreshAxiosErr = refreshError as { response?: { status?: number } };
                         if (refreshAxiosErr.response?.status === 401) {
                             localStorage.removeItem('refresh_token');
-                            await logout();
+                            await logoutRef.current();
                         }
                         return Promise.reject(error);
                     }
@@ -87,7 +97,8 @@ export const useApi = (baseURL = '') => {
         return () => {
             api.interceptors.response.eject(resInt);
         };
-    }, [api, token, setToken, logout]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [api]);
 
     const get = (url: string, config: object = {}): Promise<AxiosResponse> =>
         api.get(url, config);

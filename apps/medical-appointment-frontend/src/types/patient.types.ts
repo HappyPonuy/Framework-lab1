@@ -42,10 +42,21 @@ export interface Appointment {
     updatedAt: string;
 }
 
+
 export interface CreateAppointmentDto {
     doctorId: string;
     startTime: string;
     patientNotes?: string;
+}
+
+export interface UpdatePatientDto {
+    email: string;
+    phone: string | null;
+    firstName: string;
+    lastName: string;
+    patronymic: string | null;
+    birthDate: string;
+    gender: 'M' | 'F' | null;
 }
 
 export interface PatientContextType {
@@ -56,5 +67,6 @@ export interface PatientContextType {
     error: string | null;
     bookAppointment: (dto: CreateAppointmentDto) => Promise<void>;
     cancelAppointment: (appointmentId: string) => Promise<void>;
+    updateProfile: (dto: UpdatePatientDto) => Promise<void>;
     refresh: () => Promise<void>;
 }

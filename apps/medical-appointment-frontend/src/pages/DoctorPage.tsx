@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from '../content/AuthContext.tsx'
 import { useDoctor, DoctorProvider } from '../content/DoctorContext.tsx'
 import type { DoctorAppointment } from '../types/doctor.types.ts'
@@ -36,6 +37,7 @@ function DoctorPageContent() {
     const [selectedAppointment, setSelectedAppointment] = useState<DoctorAppointment | null>(null)
     const [notesInput, setNotesInput] = useState('')
     const [savingNotes, setSavingNotes] = useState(false)
+    const [savedToast, setSavedToast] = useState(false)
 
     const tabs = [
         { key: 'today',    label: 'Сегодня' },
@@ -49,11 +51,14 @@ function DoctorPageContent() {
     }
 
     const handleSaveNotes = async () => {
-        if (!selectedAppointment) return
+        if (!selectedAppointment || savingNotes) return
+        const notes = notesInput
         setSavingNotes(true)
         try {
-            await updateNotes({ appointmentId: selectedAppointment.id, doctorNotes: notesInput })
-            setSelectedAppointment(prev => prev ? { ...prev, doctorNotes: notesInput } : null)
+            await updateNotes({ appointmentId: selectedAppointment.id, doctorNotes: notes })
+            setSelectedAppointment(prev => prev ? { ...prev, doctorNotes: notes } : null)
+            setSavedToast(true)
+            setTimeout(() => setSavedToast(false), 2500)
         } finally {
             setSavingNotes(false)
         }
@@ -102,7 +107,7 @@ function DoctorPageContent() {
                         <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
                             {doctorInitials}
                         </div>
-                        <button onClick={() => logout()} className="text-xs text-slate-400 hover:text-red-500 transition">Выйти</button>
+                        <button onClick={() => logout()} className="text-xs text-slate-400 hover:text-red-500 transition cursor-pointer">Выйти</button>
                     </div>
                 </div>
             </header>
@@ -133,7 +138,7 @@ function DoctorPageContent() {
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={
-                                'px-4 py-1.5 rounded-lg text-sm font-medium transition ' +
+                                'px-4 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer ' +
                                 (activeTab === tab.key ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700')
                             }
                         >
@@ -150,8 +155,6 @@ function DoctorPageContent() {
                             </div>
                         ) : (
                             todayAppointments.map(a => {
-                                const dt = new Date(a.startTime)
-                                const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
                                 const patientName = `${a.patientLastName} ${a.patientFirstName} ${a.patientPatronymic ?? ''}`.trim()
                                 const age = new Date().getFullYear() - new Date(a.patientBirthDate).getFullYear()
                                 return (
@@ -162,7 +165,7 @@ function DoctorPageContent() {
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-sm font-bold text-blue-600">
-                                                {timeStr}
+                                                {a.startTime}
                                             </div>
                                             <div>
                                                 <p className="text-sm font-semibold text-slate-800">{patientName}</p>
@@ -189,16 +192,12 @@ function DoctorPageContent() {
                             </div>
                         )}
                         {appointments.map(a => {
-                            const dt = new Date(a.startTime)
-                            const dateStr = dt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
-                            const timeStr = dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
                             const patientName = `${a.patientLastName} ${a.patientFirstName}`.trim()
                             return (
                                 <div key={a.id} className="bg-white rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm border border-blue-50">
                                     <div className="flex items-center gap-4">
                                         <div className="flex flex-col items-center justify-center h-10 w-14 rounded-xl bg-blue-50 text-blue-700">
-                                            <span className="text-xs font-bold leading-none">{timeStr}</span>
-                                            <span className="text-[10px] text-blue-400 leading-none mt-0.5">{dateStr}</span>
+                                            <span className="text-xs font-bold leading-none">{a.startTime}</span>
                                         </div>
                                         <div>
                                             <p className="text-sm font-semibold text-slate-800">{patientName}</p>
@@ -238,7 +237,7 @@ function DoctorPageContent() {
                 )}
             </main>
 
-            {selectedAppointment && (
+            {selectedAppointment && createPortal(
                 <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center px-4 z-50">
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
                         <h2 className="text-lg font-bold text-slate-900 mb-4">Детали приёма</h2>
@@ -246,7 +245,7 @@ function DoctorPageContent() {
                             {[
                                 { label: 'Пациент', value: `${selectedAppointment.patientLastName} ${selectedAppointment.patientFirstName} ${selectedAppointment.patientPatronymic ?? ''}`.trim() },
                                 { label: 'Возраст', value: `${new Date().getFullYear() - new Date(selectedAppointment.patientBirthDate).getFullYear()} лет` },
-                                { label: 'Дата и время', value: new Date(selectedAppointment.startTime).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) },
+                                { label: 'Время приёма', value: selectedAppointment.startTime },
                                 { label: 'Жалоба', value: selectedAppointment.patientNotes ?? '—' },
                             ].map(f => (
                                 <div key={f.label} className="flex flex-col gap-0.5">
@@ -265,24 +264,34 @@ function DoctorPageContent() {
                                 />
                             </div>
                         </div>
-                        <div className="flex gap-2 mt-5">
+
+                        {savedToast && (
+                            <div className="mt-3 flex items-center gap-2 rounded-xl bg-green-50 border border-green-200 px-3 py-2">
+                                <svg className="h-4 w-4 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                </svg>
+                                <span className="text-xs font-medium text-green-700">Заметка сохранена</span>
+                            </div>
+                        )}
+
+                        <div className="flex gap-2 mt-4">
                             <button
                                 onClick={() => setSelectedAppointment(null)}
-                                className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition"
+                                className="flex-1 rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
                             >
                                 Закрыть
                             </button>
                             <button
                                 onClick={handleSaveNotes}
                                 disabled={savingNotes}
-                                className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition disabled:opacity-50"
+                                className="flex-1 rounded-xl bg-blue-600 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer"
                             >
                                 {savingNotes ? 'Сохранение...' : 'Сохранить'}
                             </button>
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
         </div>
     )
 }
