@@ -1,9 +1,8 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Outlet } from 'react-router-dom'
 import { useAuth } from "../content/AuthContext.tsx";
 
 export function ProtectedRoute(){
-    const { user, loading } = useAuth();
-    const isAuthenticated = user !== null;
+    const { loading } = useAuth();
 
     if (loading) {
         return (
@@ -51,5 +50,7 @@ export function ProtectedRoute(){
 
 
 
-    return isAuthenticated ? <Outlet /> : <Navigate to="/auth" replace />;
+    // TODO: вернуть проверку авторизации при подключении бека
+    // return isAuthenticated ? <Outlet /> : <Navigate to="/auth" replace />;
+    return <Outlet />;
 }

@@ -24,6 +24,7 @@ function App() {
                 <Routes>
                     <Route path="/auth" element={<AuthPage />} />
 
+                    {/* TODO: убрать при подключении бека */}
                     <Route path="/patient" element={<HomePage />} />
                     <Route path="/doctor"  element={<DoctorPage />} />
                     <Route path="/admin"   element={<AdminPage />} />

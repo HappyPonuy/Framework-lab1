@@ -1,31 +1,36 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import type { Patient, DoctorInfo, Appointment, CreateAppointmentDto, PatientContextType } from '../types/patient.types.ts';
-import {
-    fetchPatientProfile,
-    fetchPatientDoctors,
-    fetchPatientAppointments,
-    createAppointment as apiCreateAppointment,
-    cancelAppointment as apiCancelAppointment,
-} from '../api/patientApi.ts';
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import type { Patient, DoctorInfo, Appointment, CreateAppointmentDto, UpdatePatientDto, PatientContextType } from '../types/patient.types.ts';
+import { createPatientApi } from '../api/patientApi.ts';
+import { useApi } from '../hooks/useApi.ts';
+
 const PatientContext = createContext<PatientContextType | null>(null);
+
 export function PatientProvider({ children }: { children: React.ReactNode }) {
-    const [patient, setPatient] = useState<Patient | null>(null);
+    const { api } = useApi();
+    const patientApi = useMemo(() => createPatientApi(api), [api]);
+
+    const [patient, setPatient]           = useState<Patient | null>(null);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [doctors, setDoctors] = useState<DoctorInfo[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [doctors, setDoctors]           = useState<DoctorInfo[]>([]);
+    const [loading, setLoading]           = useState(true);
+    const [error, setError]               = useState<string | null>(null);
+
     const load = async () => {
         setLoading(true);
         setError(null);
         try {
             const [profileData, doctorsData, appointmentsData] = await Promise.all([
-                fetchPatientProfile(),
-                fetchPatientDoctors(),
-                fetchPatientAppointments(),
+                patientApi.fetchProfile(),
+                patientApi.fetchDoctors(),
+                patientApi.fetchAppointments(),
             ]);
             setPatient(profileData);
             setDoctors(doctorsData);
-            setAppointments(appointmentsData);
+            setAppointments(prev => {
+                const existingIds = new Set(prev.map(a => a.id));
+                const fresh = appointmentsData.filter(a => !existingIds.has(a.id));
+                return prev.length === 0 ? appointmentsData : [...prev, ...fresh];
+            });
         } catch (err: unknown) {
             const e = err as { message?: string };
             setError(e.message ?? 'Ошибка загрузки данных');
@@ -33,28 +38,38 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
             setLoading(false);
         }
     };
+
     useEffect(() => { load(); }, []);
+
     const bookAppointment = async (dto: CreateAppointmentDto) => {
-        const newAppointment = await apiCreateAppointment(dto);
-        setAppointments(prev => [...prev, newAppointment]);
-    };
-    const cancelAppointment = async (appointmentId: string) => {
-        await apiCancelAppointment(appointmentId);
+        const newAppointment = await patientApi.createAppointment(dto);
         setAppointments(prev =>
-            prev.map(a => a.id === appointmentId ? { ...a, status: 'cancelled' as const } : a)
+            prev.find(a => a.id === newAppointment.id) ? prev : [...prev, newAppointment]
         );
     };
+
+    const cancelAppointment = async (appointmentId: string) => {
+        await patientApi.cancelAppointment(appointmentId);
+        setAppointments(prev => prev.filter(a => a.id !== appointmentId));
+    };
+
+    const updateProfile = async (dto: UpdatePatientDto) => {
+        const updated = await patientApi.updateProfile(dto);
+        setPatient(updated);
+    };
+
     return (
         <PatientContext.Provider value={{
             patient, appointments, doctors,
             loading, error,
-            bookAppointment, cancelAppointment,
+            bookAppointment, cancelAppointment, updateProfile,
             refresh: load,
         }}>
             {children}
         </PatientContext.Provider>
     );
 }
+
 export function usePatient(): PatientContextType {
     const ctx = useContext(PatientContext);
     if (!ctx) throw new Error('usePatient must be used within a PatientProvider');
