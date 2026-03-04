@@ -1,60 +1,62 @@
 import type { AxiosInstance } from 'axios';
 import type { DoctorProfile, DoctorSchedule, DoctorAppointment } from '../types/doctor.types.ts';
-import type { GetDoctorProfileResponseDto, GetDoctorScheduleResponseDto } from '@contracts/doctor/get-profile.ts';
-import type { GetDoctorAppointmentsResponseDto, UpdateAppointmentNotesRequestDto, UpdateAppointmentNotesResponseDto } from '@contracts/doctor/appointments.ts';
+import type { AppointmentsUpdateNotesRequestDto } from '@contracts/appointments/update_notes.ts';
 
 
 const MOCK_DOCTOR_PROFILE: DoctorProfile = {
     id: 'd-001',
-    userId: 'u-003',
-    specialtyId: 1,
-    specialtyName: 'Терапевт',
-    firstName: 'Александр',
-    lastName: 'Иванов',
+    user_id: 'u-003',
+    specialty: 'Терапевт',
+    first_name: 'Александр',
+    last_name: 'Иванов',
     patronymic: 'Петрович',
     notes: null,
-    isActive: true,
+    is_active: true,
+    work_days: 31,
+    shift_start: '09:00',
+    shift_end: '18:00',
+    slot_minutes: 30,
 };
 
 const MOCK_SCHEDULE: DoctorSchedule = {
     id: 's-001',
-    doctorId: 'd-001',
-    workDays: 31,
-    startTime: '09:00',
-    endTime: '18:00',
-    slotMinutes: 30,
+    doctor_id: 'd-001',
+    work_days: 31,
+    start_time: '09:00',
+    end_time: '18:00',
+    slot_minutes: 30,
 };
 
 const MOCK_DOCTOR_APPOINTMENTS: DoctorAppointment[] = [
-    { id: 'a-001', patientId: 'p-001', patientFirstName: 'Алексей', patientLastName: 'Петров',   patientPatronymic: 'Иванович',  patientBirthDate: '1995-03-15', startTime: '09:00', patientNotes: 'Головная боль, температура', doctorNotes: null },
-    { id: 'a-002', patientId: 'p-002', patientFirstName: 'Мария',   patientLastName: 'Сидорова', patientPatronymic: 'Андреевна', patientBirthDate: '1981-07-22', startTime: '10:00', patientNotes: 'Плановый осмотр',           doctorNotes: null },
-    { id: 'a-003', patientId: 'p-003', patientFirstName: 'Игорь',   patientLastName: 'Кузнецов', patientPatronymic: 'Олегович',  patientBirthDate: '1998-11-05', startTime: '11:30', patientNotes: 'Боль в спине',              doctorNotes: 'Рекомендован рентген' },
-    { id: 'a-004', patientId: 'p-004', patientFirstName: 'Ольга',   patientLastName: 'Фёдорова', patientPatronymic: 'Николаевна',patientBirthDate: '1971-04-10', startTime: '14:00', patientNotes: 'Давление, слабость',        doctorNotes: null },
-    { id: 'a-005', patientId: 'p-005', patientFirstName: 'Виктор',  patientLastName: 'Морозов',  patientPatronymic: 'Сергеевич', patientBirthDate: '1988-09-17', startTime: '15:30', patientNotes: 'Кашель, насморк',           doctorNotes: null },
+    { id: 'a-001', patient_id: 'p-001', patient_name: 'Петров Алексей Иванович',   doctor_id: 'd-001', doctor_name: 'Иванов А.П.', specialty_name: 'Терапевт', start_time: '09:00', patient_notes: 'Головная боль, температура', doctor_notes: null,                    created_at: '2026-03-04T00:00:00Z', updated_at: '2026-03-04T00:00:00Z' },
+    { id: 'a-002', patient_id: 'p-002', patient_name: 'Сидорова Мария Андреевна', doctor_id: 'd-001', doctor_name: 'Иванов А.П.', specialty_name: 'Терапевт', start_time: '10:00', patient_notes: 'Плановый осмотр',           doctor_notes: null,                    created_at: '2026-03-04T00:00:00Z', updated_at: '2026-03-04T00:00:00Z' },
+    { id: 'a-003', patient_id: 'p-003', patient_name: 'Кузнецов Игорь Олегович',  doctor_id: 'd-001', doctor_name: 'Иванов А.П.', specialty_name: 'Терапевт', start_time: '11:30', patient_notes: 'Боль в спине',              doctor_notes: 'Рекомендован рентген', created_at: '2026-03-04T00:00:00Z', updated_at: '2026-03-04T00:00:00Z' },
+    { id: 'a-004', patient_id: 'p-004', patient_name: 'Фёдорова Ольга Николаевна',doctor_id: 'd-001', doctor_name: 'Иванов А.П.', specialty_name: 'Терапевт', start_time: '14:00', patient_notes: 'Давление, слабость',        doctor_notes: null,                    created_at: '2026-03-04T00:00:00Z', updated_at: '2026-03-04T00:00:00Z' },
+    { id: 'a-005', patient_id: 'p-005', patient_name: 'Морозов Виктор Сергеевич', doctor_id: 'd-001', doctor_name: 'Иванов А.П.', specialty_name: 'Терапевт', start_time: '15:30', patient_notes: 'Кашель, насморк',           doctor_notes: null,                    created_at: '2026-03-04T00:00:00Z', updated_at: '2026-03-04T00:00:00Z' },
 ];
 
 
 export function createDoctorApi(_axios: AxiosInstance) {
     return {
-        async fetchProfile(): Promise<GetDoctorProfileResponseDto> {
-            // return (await _axios.get<GetDoctorProfileResponseDto>('/doctor/profile')).data;
+        async fetchProfile(): Promise<DoctorProfile> {
+            // return (await _axios.get<DoctorProfile>('/users/doctors/me')).data;
             return Promise.resolve(MOCK_DOCTOR_PROFILE);
         },
 
-        async fetchSchedule(): Promise<GetDoctorScheduleResponseDto> {
-            // return (await _axios.get<GetDoctorScheduleResponseDto>('/doctor/schedule')).data;
+        async fetchSchedule(): Promise<DoctorSchedule> {
+            // return (await _axios.get<DoctorSchedule>('/users/doctors/me/schedule')).data;
             return Promise.resolve(MOCK_SCHEDULE);
         },
 
-        async fetchAppointments(): Promise<GetDoctorAppointmentsResponseDto> {
-            // return (await _axios.get<GetDoctorAppointmentsResponseDto>('/doctor/appointments')).data;
+        async fetchAppointments(): Promise<DoctorAppointment[]> {
+            // return (await _axios.get<DoctorAppointment[]>('/appointments')).data;
             return Promise.resolve(MOCK_DOCTOR_APPOINTMENTS);
         },
 
-        async updateAppointmentNotes(dto: UpdateAppointmentNotesRequestDto): Promise<UpdateAppointmentNotesResponseDto> {
-            // await _axios.patch<UpdateAppointmentNotesResponseDto>(`/doctor/appointments/${dto.appointmentId}/notes`, { doctorNotes: dto.doctorNotes });
-            const idx = MOCK_DOCTOR_APPOINTMENTS.findIndex(a => a.id === dto.appointmentId);
-            if (idx !== -1) MOCK_DOCTOR_APPOINTMENTS[idx].doctorNotes = dto.doctorNotes;
+        async updateAppointmentNotes(dto: AppointmentsUpdateNotesRequestDto): Promise<void> {
+            // await _axios.patch(`/appointments/${dto.appointment_id}/notes`, { doctor_notes: dto.doctor_notes });
+            const idx = MOCK_DOCTOR_APPOINTMENTS.findIndex(a => a.id === dto.appointment_id);
+            if (idx !== -1) MOCK_DOCTOR_APPOINTMENTS[idx].doctor_notes = dto.doctor_notes;
         },
     };
 }
