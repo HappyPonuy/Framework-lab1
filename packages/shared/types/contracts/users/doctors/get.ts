@@ -1,4 +1,4 @@
-export type GetDoctorsResponseDto = {
+export type UsersDoctorsGetResponseDto = {
     id: string;
     userId: string;
     specialtyId: number;
@@ -8,10 +8,5 @@ export type GetDoctorsResponseDto = {
     patronymic: string | null;
     notes: string | null;
     isActive: boolean;
-}[];
-
-export type GetSpecialtiesResponseDto = {
-    id: number;
-    specialtyName: string;
 }[];
 
