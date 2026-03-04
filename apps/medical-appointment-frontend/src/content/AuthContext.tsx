@@ -1,9 +1,8 @@
 import { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { http } from '../api/http.ts';
+import { authApi } from '../api/authApi.ts';
 import type { User, AuthContextFullType, LoginResult } from '../types/auth.types.ts';
-import type { LoginResponseDto } from '@contracts/auth/login.ts';
-import type { RefreshResponseDto } from '@contracts/auth/refresh.ts';
 import { LoginRequestSchema } from '@contracts/auth/login.ts';
 import { LogoutRequestSchema } from '@contracts/auth/logout.ts';
 import { RefreshRequestSchema } from '@contracts/auth/refresh.ts';
@@ -42,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-            const res = await http.post<LoginResponseDto>('/auth/login', parsed.data);
+            const res = await authApi.login(parsed.data);
             const { access_token, refresh_token } = res.data;
 
             setToken(access_token);
@@ -64,9 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         try {
             if (parsed.success) {
-                await http.post('/auth/logout', parsed.data, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                await authApi.logout(parsed.data);
             }
         } catch (err: unknown) {
             console.error(err);
@@ -90,7 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-            const res = await http.post<RefreshResponseDto>('/auth/refresh', parsed.data);
+            const res = await authApi.refresh(parsed.data);
             setToken(res.data.access_token);
         } catch (err: unknown) {
             const axiosErr = err as { response?: { status?: number } };
