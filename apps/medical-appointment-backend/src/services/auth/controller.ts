@@ -11,6 +11,22 @@ import type { RefreshRequestDto } from "@contracts/auth/refresh.js";
 export default class AuthController {
     constructor(private service: AuthService) {}
 
+    async addUser(req: Request, res: Response, next: NextFunction) {
+        try {
+            const credentials = req.body as RegisterRequestDto;
+            
+            const { result, userId } = await this.service.register(
+                credentials.username, 
+                credentials.password, 
+                credentials.role
+            );
+
+            res.status(200).json({ result, userId });
+        } catch (err) {
+            next(err);
+        }
+    }
+
     async register(req: Request, res: Response, next: NextFunction) {
         try {
             const credentials = req.body as RegisterRequestDto;
