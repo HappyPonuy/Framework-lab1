@@ -2,6 +2,7 @@ import { ZodType } from "zod";
 import type { Request, Response, NextFunction } from "express";
 import { AuthHandler } from "@modules/auth_handler";
 import { JWTCheckResult } from "@custom_types/jwtcheckresult";
+import type { UserRole } from "@custom_types/userroles";
 import { SchemaMismatchError } from "@errors/schemamismatch";
 import { MissingAuthHeaderError } from "@errors/missingauthheader";
 import { InvalidTokenError } from "@errors/invalidtoken";
@@ -34,7 +35,7 @@ export const validateAuth =  () => (req: Request, res: Response, next: NextFunct
     next();
 };
 
-export const validateUserRole = (...allowedRoles: string[]) => (req: Request, res: Response, next: NextFunction) => {
+export const validateUserRole = (...allowedRoles: UserRole[]) => (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) return next(new SchemaMismatchError());
     if (!allowedRoles.includes(req.user.user_role)) return next(new UnauthorizedError());
     next();
