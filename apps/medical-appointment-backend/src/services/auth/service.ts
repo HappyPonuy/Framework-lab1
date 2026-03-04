@@ -1,23 +1,23 @@
 import AuthRepository from "./repository.js";
 import { AuthHandler } from "@modules/auth_handler";
 import { PasswordHandler } from "@modules/password";
-import { RegisterUserResult } from "@custom_types/registeruserresult";
+import { RegisterResult } from "@contracts/auth/register.js";
 
 export default class AuthService {
     constructor(private repo: AuthRepository) {}
 
     async register(name: string, pass: string, role: 'P' | 'D' | 'A'): Promise<{
-        result: RegisterUserResult,
+        result: RegisterResult,
         userId: string | null
     }> {
         const userInfo = await this.repo.getUserByName(name);
-        if (userInfo) return { result: RegisterUserResult.Duplicate, userId: null };
+        if (userInfo) return { result: RegisterResult.Duplicate, userId: null };
 
         const passHash = PasswordHandler.hash(pass);
         const userId = await this.repo.addUser(name, passHash, role);
-        if (!userId) return { result: RegisterUserResult.Error, userId: null };
+        if (!userId) return { result: RegisterResult.Error, userId: null };
 
-        return { result: RegisterUserResult.Success, userId };
+        return { result: RegisterResult.Success, userId };
     }
 
     async login(name: string, pass: string, userAgent?: string, userIp?: string): Promise<{
