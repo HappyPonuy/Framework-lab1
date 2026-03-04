@@ -1,44 +1,30 @@
+import type { UsersDoctorDto } from '@contracts/users/doctors/get.ts';
+import type { AppointmentDto } from '@contracts/appointments/get.ts';
 import type { DoctorSpecialty } from './patient.types.ts';
 
 export interface AdminUser {
     id: string;
     username: string;
-    roleId: 'P' | 'D' | 'A';
-}
-
-export interface AdminDoctor {
-    id: string;
-    userId: string;
-    specialtyId: number;
-    specialtyName: string;
-    firstName: string;
-    lastName: string;
+    role_id: 'P' | 'D' | 'A';
+    first_name: string;
+    last_name: string;
     patronymic: string | null;
-    notes: string | null;
-    isActive: boolean;
 }
 
-export interface AdminAppointment {
-    id: string;
-    patientId: string;
-    patientName: string;
-    doctorId: string;
-    doctorName: string;
-    specialtyName: string;
-    startTime: string;
-    patientNotes: string | null;
-    doctorNotes: string | null;
-    createdAt: string;
-    updatedAt: string;
-}
+export type AdminDoctor = UsersDoctorDto;
+export type AdminAppointment = AppointmentDto;
 
 export interface CreateDoctorDto {
-    userId: string;
-    specialtyId: number;
-    firstName: string;
-    lastName: string;
+    user_id: string;
+    specialty: string;
+    first_name: string;
+    last_name: string;
     patronymic?: string;
     notes?: string;
+    work_days: number;
+    shift_start: string;
+    shift_end: string;
+    slot_minutes: number;
 }
 
 export interface AdminContextType {
@@ -48,7 +34,6 @@ export interface AdminContextType {
     specialties: DoctorSpecialty[];
     loading: boolean;
     error: string | null;
-    toggleDoctorActive: (doctorId: string, isActive: boolean) => Promise<void>;
     deleteAppointment: (appointmentId: string) => Promise<void>;
     createDoctor: (dto: CreateDoctorDto) => Promise<void>;
     refresh: () => Promise<void>;

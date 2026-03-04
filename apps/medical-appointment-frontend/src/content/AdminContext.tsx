@@ -43,11 +43,6 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => { load(); }, [load]);
 
-    const toggleDoctorActive = useCallback(async (doctorId: string, isActive: boolean) => {
-        await adminApiRef.current.toggleDoctorActive(doctorId, isActive);
-        setDoctors(prev => prev.map(d => d.id === doctorId ? { ...d, isActive } : d));
-    }, []);
-
     const deleteAppointment = useCallback(async (appointmentId: string) => {
         await adminApiRef.current.deleteAppointment(appointmentId);
         setAppointments(prev => prev.filter(a => a.id !== appointmentId));
@@ -62,7 +57,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         <AdminContext.Provider value={{
             users, doctors, appointments, specialties,
             loading, error,
-            toggleDoctorActive, deleteAppointment, createDoctor,
+            deleteAppointment, createDoctor,
             refresh: load,
         }}>
             {children}
