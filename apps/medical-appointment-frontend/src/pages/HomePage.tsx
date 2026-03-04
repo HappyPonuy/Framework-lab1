@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAuth } from '../content/AuthContext.tsx'
 import { usePatient, PatientProvider } from '../content/PatientContext.tsx'
+import { generateTimeSlots } from '../api/patientApi.ts'
 import type { DoctorInfo } from '../types/patient.types.ts'
 import type { CreateAppointmentDto, UpdatePatientDto } from '../types/patient.types.ts'
 
@@ -32,10 +33,16 @@ function HomePageContent() {
     const [showBookingModal, setShowBookingModal] = useState(false)
     const [selectedDoctor, setSelectedDoctor] = useState<DoctorInfo | null>(null)
     const [selectedTime, setSelectedTime] = useState('')
+    const [patientNotes, setPatientNotes] = useState('')
     const [booking, setBooking] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
     const [editForm, setEditForm] = useState<UpdatePatientDto | null>(null)
     const [saving, setSaving] = useState(false)
+
+    const timeSlots = useMemo(() => {
+        if (!selectedDoctor) return []
+        return generateTimeSlots(selectedDoctor.shift_start, selectedDoctor.shift_end, selectedDoctor.slot_minutes)
+    }, [selectedDoctor])
 
     const tabs = [
         { key: 'appointments', label: 'Мои записи' },
@@ -46,6 +53,7 @@ function HomePageContent() {
     const handleBook = (doctor: DoctorInfo) => {
         setSelectedDoctor(doctor)
         setSelectedTime('')
+        setPatientNotes('')
         setShowBookingModal(true)
     }
     const handleConfirmBook = async () => {
@@ -53,8 +61,9 @@ function HomePageContent() {
         setBooking(true)
         try {
             const dto: CreateAppointmentDto = {
-                doctorId: selectedDoctor.id,
-                startTime: selectedTime,
+                doctor_id: selectedDoctor.id,
+                start_time: selectedTime,
+                patient_notes: patientNotes.trim() || undefined,
             }
             await bookAppointment(dto)
             setShowBookingModal(false)
@@ -68,10 +77,10 @@ function HomePageContent() {
         setEditForm({
             email:      patient.email,
             phone:      patient.phone,
-            firstName:  patient.firstName,
-            lastName:   patient.lastName,
+            first_name: patient.first_name,
+            last_name:  patient.last_name,
             patronymic: patient.patronymic,
-            birthDate:  patient.birthDate,
+            birth_date: new Date(patient.birth_date).toISOString().split('T')[0],
             gender:     patient.gender,
         })
         setShowEditModal(true)
@@ -88,10 +97,9 @@ function HomePageContent() {
         }
     }
 
-    // Инициалы из имени пользователя (первые две буквы username)
     const initials = user?.username?.slice(0, 2).toUpperCase() ?? '??'
     const displayName = patient
-        ? `${patient.lastName} ${patient.firstName} ${patient.patronymic ?? ''}`.trim()
+        ? `${patient.last_name} ${patient.first_name} ${patient.patronymic ?? ''}`.trim()
         : user?.username ?? ''
 
     if (loading) {
@@ -143,7 +151,7 @@ function HomePageContent() {
 
                 <div className="mb-6">
                     <h1 className="text-xl font-bold text-slate-900">
-                        Добро пожаловать, {patient?.firstName ?? user?.username} 👋
+                        Добро пожаловать, {patient?.first_name ?? user?.username} 👋
                     </h1>
                     <p className="text-sm text-slate-500 mt-0.5">Управляйте своими записями к врачу</p>
                 </div>
@@ -151,8 +159,8 @@ function HomePageContent() {
                 <div className="grid grid-cols-3 gap-3 mb-6">
                     {[
                         { label: 'Всего записей',    value: appointments.length, color: 'text-blue-600' },
-                        { label: 'С заметками врача', value: appointments.filter(a => a.doctorNotes).length, color: 'text-green-600' },
-                        { label: 'Врачей доступно',  value: doctors.filter(d => d.isActive).length, color: 'text-indigo-600' },
+                        { label: 'С заметками врача', value: appointments.filter(a => a.doctor_notes).length, color: 'text-green-600' },
+                        { label: 'Врачей доступно',  value: doctors.filter(d => d.is_active).length, color: 'text-indigo-600' },
                     ].map(stat => (
                         <div key={stat.label} className="bg-white rounded-2xl p-4 shadow-sm shadow-blue-900/5 border border-blue-50">
                             <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
@@ -184,31 +192,37 @@ function HomePageContent() {
                             </div>
                         ) : (
                             appointments.map(a => {
-                                return (
-                                    <div key={a.id} className="bg-white rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm border border-blue-50">
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                                                <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-                                                </svg>
+                                    return (
+                                        <div key={a.id} className="bg-white rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm border border-blue-50">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                                                    <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-slate-800">{a.doctor_name}</p>
+                                                    <p className="text-xs text-slate-400">{a.specialty_name} · {a.start_time}</p>
+                                                    {a.patient_notes && (
+                                                        <p className="text-xs text-slate-500 mt-0.5">Жалоба: {a.patient_notes}</p>
+                                                    )}
+                                                    {a.doctor_notes && (
+                                                        <p className="text-xs text-green-600 mt-0.5">Заметка врача: {a.doctor_notes}</p>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-semibold text-slate-800">{a.doctorName}</p>
-                                                <p className="text-xs text-slate-400">{a.specialtyName} · {a.startTime}</p>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => cancelAppointment(a.id)}
+                                                    className="text-xs text-red-400 hover:text-red-600 transition px-1 cursor-pointer"
+                                                    title="Отменить"
+                                                >
+                                                    ✕
+                                                </button>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => cancelAppointment(a.id)}
-                                                className="text-xs text-red-400 hover:text-red-600 transition px-1 cursor-pointer"
-                                                title="Отменить"
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
-                                    </div>
-                                )
-                            })
+                                    )
+                                })
                         )}
                         <button
                             onClick={() => setActiveTab('doctors')}
@@ -225,7 +239,7 @@ function HomePageContent() {
                 {activeTab === 'doctors' && (
                     <div className="grid sm:grid-cols-2 gap-3">
                         {doctors.map(doctor => {
-                            const initials = `${doctor.lastName[0]}${doctor.firstName[0]}`
+                            const initials = `${doctor.last_name[0]}${doctor.first_name[0]}`
                             return (
                                 <div key={doctor.id} className="bg-white rounded-2xl p-5 shadow-sm border border-blue-50 flex flex-col gap-3">
                                     <div className="flex items-center gap-3">
@@ -234,19 +248,23 @@ function HomePageContent() {
                                         </div>
                                         <div>
                                             <p className="text-sm font-semibold text-slate-800">
-                                                {doctor.lastName} {doctor.firstName} {doctor.patronymic ?? ''}
+                                                {doctor.last_name} {doctor.first_name} {doctor.patronymic ?? ''}
                                             </p>
-                                            <p className="text-xs text-slate-400">{doctor.specialtyName}</p>
+                                            <p className="text-xs text-slate-400">{doctor.specialty}</p>
                                         </div>
                                     </div>
+                                    <div className="grid grid-cols-2 gap-1 text-xs text-slate-500">
+                                        <span>🕐 {doctor.shift_start} – {doctor.shift_end}</span>
+                                        <span>⏱ слот {doctor.slot_minutes} мин</span>
+                                    </div>
                                     <div className="flex items-center justify-end">
-                                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${doctor.isActive ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}>
-                                            {doctor.isActive ? 'Доступен' : 'Недоступен'}
+                                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${doctor.is_active ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-slate-100 text-slate-400 border border-slate-200'}`}>
+                                            {doctor.is_active ? 'Доступен' : 'Недоступен'}
                                         </span>
                                     </div>
                                     <button
                                         onClick={() => handleBook(doctor)}
-                                        disabled={!doctor.isActive}
+                                        disabled={!doctor.is_active}
                                         className="w-full rounded-xl bg-blue-600 py-2 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 hover:bg-blue-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
                                     >
                                         Записаться
@@ -270,16 +288,16 @@ function HomePageContent() {
                         </div>
                         <div className="space-y-3">
                             {[
-                                { label: 'Фамилия', value: patient.lastName },
-                                { label: 'Имя', value: patient.firstName },
+                                { label: 'Фамилия', value: patient.last_name },
+                                { label: 'Имя', value: patient.first_name },
                                 { label: 'Отчество', value: patient.patronymic ?? '—' },
                                 { label: 'Email', value: patient.email },
                                 { label: 'Телефон', value: patient.phone ?? '—' },
                                 {
                                     label: 'Дата рождения',
-                                    value: new Date(patient.birthDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
+                                    value: new Date(patient.birth_date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
                                 },
-                                { label: 'Пол', value: patient.gender === 'M' ? 'Мужской' : patient.gender === 'F' ? 'Женский' : '—' },
+                                { label: 'Пол', value: patient.gender === 'M' ? 'Мужской' : 'Женский' },
                             ].map(field => (
                                 <div key={field.label} className="flex flex-col gap-0.5">
                                     <span className="text-xs text-slate-400 uppercase tracking-wide">{field.label}</span>
@@ -301,7 +319,7 @@ function HomePageContent() {
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
                         <h2 className="text-lg font-bold text-slate-900 mb-1">Запись к врачу</h2>
                         <p className="text-sm text-slate-500 mb-5">
-                            {selectedDoctor.lastName} {selectedDoctor.firstName} · {selectedDoctor.specialtyName}
+                            {selectedDoctor.last_name} {selectedDoctor.first_name} · {selectedDoctor.specialty}
                         </p>
                         <div className="space-y-3">
                             <div>
@@ -312,10 +330,20 @@ function HomePageContent() {
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
                                 >
                                     <option value="">Выберите время</option>
-                                    {['09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00'].map(t => (
+                                    {timeSlots.map(t => (
                                         <option key={t} value={t}>{t}</option>
                                     ))}
                                 </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Жалоба (необязательно)</label>
+                                <textarea
+                                    value={patientNotes}
+                                    onChange={e => setPatientNotes(e.target.value)}
+                                    rows={2}
+                                    placeholder="Опишите симптомы..."
+                                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition resize-none"
+                                />
                             </div>
                         </div>
                         <div className="flex gap-2 mt-5">
@@ -342,12 +370,12 @@ function HomePageContent() {
                         <h2 className="text-lg font-bold text-slate-900 mb-4">Редактировать профиль</h2>
                         <div className="space-y-3">
                             {([
-                                { label: 'Фамилия',  field: 'lastName'   as const, type: 'text' },
-                                { label: 'Имя',      field: 'firstName'  as const, type: 'text' },
+                                { label: 'Фамилия',  field: 'last_name'  as const, type: 'text' },
+                                { label: 'Имя',      field: 'first_name' as const, type: 'text' },
                                 { label: 'Отчество', field: 'patronymic' as const, type: 'text' },
                                 { label: 'Email',    field: 'email'      as const, type: 'email' },
                                 { label: 'Телефон',  field: 'phone'      as const, type: 'tel' },
-                                { label: 'Дата рождения', field: 'birthDate' as const, type: 'date' },
+                                { label: 'Дата рождения', field: 'birth_date' as const, type: 'date' },
                             ] as { label: string; field: keyof UpdatePatientDto; type: string }[]).map(({ label, field, type }) => (
                                 <div key={field}>
                                     <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">{label}</label>
@@ -362,11 +390,10 @@ function HomePageContent() {
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Пол</label>
                                 <select
-                                    value={editForm.gender ?? ''}
-                                    onChange={e => setEditForm(prev => prev ? { ...prev, gender: (e.target.value as 'M' | 'F') || null } : prev)}
+                                    value={editForm.gender}
+                                    onChange={e => setEditForm(prev => prev ? { ...prev, gender: e.target.value as 'M' | 'F' } : prev)}
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
                                 >
-                                    <option value="">Не указан</option>
                                     <option value="M">Мужской</option>
                                     <option value="F">Женский</option>
                                 </select>

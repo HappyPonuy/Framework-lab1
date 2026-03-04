@@ -15,6 +15,19 @@ const roleMap: Record<string, { label: string; className: string }> = {
     A: { label: 'Админ',   className: 'bg-amber-50 text-amber-700' },
 }
 
+const DEFAULT_ADD_FORM: CreateDoctorDto = {
+    user_id: '',
+    specialty: '',
+    first_name: '',
+    last_name: '',
+    patronymic: '',
+    notes: '',
+    work_days: 31,
+    shift_start: '09:00',
+    shift_end: '18:00',
+    slot_minutes: 30,
+}
+
 function MedLogo() {
     return (
         <svg className="h-6 w-6" viewBox="0 0 473.931 473.931" xmlns="http://www.w3.org/2000/svg">
@@ -37,11 +50,11 @@ function MedLogo() {
 
 function AdminPageContent() {
     const { user, logout } = useAuth()
-    const { users, doctors, appointments, specialties, loading, error, toggleDoctorActive, deleteAppointment, createDoctor } = useAdmin()
+    const { users, doctors, appointments, loading, error, deleteAppointment, createDoctor } = useAdmin()
 
     const [activeTab, setActiveTab] = useState<'overview' | 'doctors' | 'users' | 'appointments'>('overview')
     const [showAddDoctor, setShowAddDoctor] = useState(false)
-    const [addForm, setAddForm] = useState<CreateDoctorDto>({ userId: '', specialtyId: 0, firstName: '', lastName: '', patronymic: '', notes: '' })
+    const [addForm, setAddForm] = useState<CreateDoctorDto>(DEFAULT_ADD_FORM)
     const [addSaving, setAddSaving] = useState(false)
     const [addError, setAddError] = useState<string | null>(null)
 
@@ -53,18 +66,22 @@ function AdminPageContent() {
     ] as const
 
     const handleOpenAddDoctor = () => {
-        setAddForm({ userId: '', specialtyId: specialties[0]?.id ?? 0, firstName: '', lastName: '', patronymic: '', notes: '' })
+        setAddForm({ ...DEFAULT_ADD_FORM })
         setAddError(null)
         setShowAddDoctor(true)
     }
 
     const handleSaveDoctor = async () => {
-        if (!addForm.firstName.trim() || !addForm.lastName.trim()) {
+        if (!addForm.first_name.trim() || !addForm.last_name.trim()) {
             setAddError('Заполните имя и фамилию')
             return
         }
-        if (!addForm.userId.trim()) {
+        if (!addForm.user_id.trim()) {
             setAddError('Укажите ID пользователя')
+            return
+        }
+        if (!addForm.specialty.trim()) {
+            setAddError('Укажите специальность')
             return
         }
         setAddSaving(true)
@@ -143,7 +160,7 @@ function AdminPageContent() {
                                 { label: 'Всего врачей',    value: doctors.length, color: 'text-blue-600' },
                                 { label: 'Пользователей',   value: users.length, color: 'text-indigo-600' },
                                 { label: 'Записей всего',   value: appointments.length, color: 'text-slate-700' },
-                                { label: 'Активных врачей', value: doctors.filter(d => d.isActive).length, color: 'text-green-600' },
+                                { label: 'Активных врачей', value: doctors.filter(d => d.is_active).length, color: 'text-green-600' },
                             ].map(s => (
                                 <div key={s.label} className="bg-white rounded-2xl p-4 shadow-sm border border-blue-50">
                                     <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -155,16 +172,16 @@ function AdminPageContent() {
                         <div className="bg-white rounded-2xl p-5 shadow-sm border border-blue-50">
                             <h3 className="text-sm font-semibold text-slate-700 mb-3">Последние записи</h3>
                             <div className="space-y-2">
-                                {appointments.slice(0, 3).map(a => {
-                                    return (
-                                        <div key={a.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
-                                            <div>
-                                                <p className="text-sm font-medium text-slate-800">{a.patientName} → {a.doctorName}</p>
-                                                <p className="text-xs text-slate-400">{a.specialtyName} · {a.startTime}</p>
-                                            </div>
+                                {appointments.slice(0, 3).map(a => (
+                                    <div key={a.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+                                        <div>
+                                            <p className="text-sm font-medium text-slate-800">
+                                                {a.patient_name} → {a.doctor_name}
+                                            </p>
+                                            <p className="text-xs text-slate-400">{a.specialty_name} · {a.start_time}</p>
                                         </div>
-                                    )
-                                })}
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -183,8 +200,8 @@ function AdminPageContent() {
                         </div>
                         <div className="divide-y divide-slate-50">
                             {doctors.map(d => {
-                                const initials = `${d.lastName[0]}${d.firstName[0]}`
-                                const fullName = `${d.lastName} ${d.firstName} ${d.patronymic ?? ''}`.trim()
+                                const initials = `${d.last_name[0]}${d.first_name[0]}`
+                                const fullName = `${d.last_name} ${d.first_name} ${d.patronymic ?? ''}`.trim()
                                 return (
                                     <div key={d.id} className="px-5 py-3.5 flex items-center justify-between">
                                         <div className="flex items-center gap-3">
@@ -193,20 +210,13 @@ function AdminPageContent() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-slate-800">{fullName}</p>
-                                                <p className="text-xs text-slate-400">{d.specialtyName}</p>
+                                                <p className="text-xs text-slate-400">{d.specialty} · {d.shift_start}–{d.shift_end} · слот {d.slot_minutes} мин</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${d.isActive ? activeMap.active.className : activeMap.inactive.className}`}>
-                                                {d.isActive ? activeMap.active.label : activeMap.inactive.label}
+                                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${d.is_active ? activeMap.active.className : activeMap.inactive.className}`}>
+                                                {d.is_active ? activeMap.active.label : activeMap.inactive.label}
                                             </span>
-                                            <button
-                                                onClick={() => toggleDoctorActive(d.id, !d.isActive)}
-                                                className="text-xs text-slate-400 hover:text-blue-600 transition px-2 cursor-pointer"
-                                                title={d.isActive ? 'Деактивировать' : 'Активировать'}
-                                            >
-                                                {d.isActive ? '⏸' : '▶'}
-                                            </button>
                                         </div>
                                     </div>
                                 )
@@ -222,13 +232,15 @@ function AdminPageContent() {
                         </div>
                         <div className="divide-y divide-slate-50">
                             {users.map(u => {
+                                const fullName = `${u.last_name} ${u.first_name} ${u.patronymic ?? ''}`.trim()
                                 return (
                                     <div key={u.id} className="px-5 py-3.5 flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-slate-800">{u.username}</p>
+                                            <p className="text-sm font-medium text-slate-800">{fullName}</p>
+                                            <p className="text-xs text-slate-400">@{u.username}</p>
                                         </div>
-                                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${roleMap[u.roleId]?.className ?? ''}`}>
-                                            {roleMap[u.roleId]?.label ?? u.roleId}
+                                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${roleMap[u.role_id]?.className ?? ''}`}>
+                                            {roleMap[u.role_id]?.label ?? u.role_id}
                                         </span>
                                     </div>
                                 )
@@ -243,25 +255,29 @@ function AdminPageContent() {
                             <h3 className="text-sm font-semibold text-slate-700">Все записи</h3>
                         </div>
                         <div className="divide-y divide-slate-50">
-                            {appointments.map(a => {
-                                return (
-                                    <div key={a.id} className="px-5 py-3.5 flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm font-medium text-slate-800">{a.patientName} → {a.doctorName}</p>
-                                            <p className="text-xs text-slate-400">{a.specialtyName} · {a.startTime}</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => deleteAppointment(a.id)}
-                                                className="text-xs text-red-400 hover:text-red-600 transition px-1 cursor-pointer"
-                                                title="Удалить"
-                                            >
-                                                ✕
-                                            </button>
-                                        </div>
+                            {appointments.map(a => (
+                                <div key={a.id} className="px-5 py-3.5 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-slate-800">
+                                            {a.patient_name} → {a.doctor_name}
+                                        </p>
+                                        <p className="text-xs text-slate-400">{a.specialty_name} · {a.start_time}</p>
+                                        {a.patient_notes && (
+                                            <p className="text-xs text-slate-400 mt-0.5">Жалоба: {a.patient_notes}</p>
+                                        )}
+                                        {a.doctor_notes && (
+                                            <p className="text-xs text-green-600 mt-0.5">Заметка врача: {a.doctor_notes}</p>
+                                        )}
                                     </div>
-                                )
-                            })}
+                                    <button
+                                        onClick={() => deleteAppointment(a.id)}
+                                        className="text-xs text-red-400 hover:text-red-600 transition px-1 cursor-pointer"
+                                        title="Удалить"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
@@ -270,15 +286,16 @@ function AdminPageContent() {
 
             {showAddDoctor && createPortal(
                 <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center px-4 z-50">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 max-h-[90vh] overflow-y-auto">
                         <h2 className="text-lg font-bold text-slate-900 mb-4">Добавить врача</h2>
                         <div className="space-y-3">
                             {([
-                                { label: 'Фамилия *',   field: 'lastName'   as const, type: 'text' },
-                                { label: 'Имя *',       field: 'firstName'  as const, type: 'text' },
-                                { label: 'Отчество',    field: 'patronymic' as const, type: 'text' },
-                                { label: 'ID пользователя *', field: 'userId' as const, type: 'text' },
-                                { label: 'Заметки',     field: 'notes'      as const, type: 'text' },
+                                { label: 'Фамилия *',         field: 'last_name'  as const, type: 'text' },
+                                { label: 'Имя *',             field: 'first_name' as const, type: 'text' },
+                                { label: 'Отчество',          field: 'patronymic' as const, type: 'text' },
+                                { label: 'ID пользователя *', field: 'user_id'    as const, type: 'text' },
+                                { label: 'Специальность *',   field: 'specialty'  as const, type: 'text' },
+                                { label: 'Заметки',           field: 'notes'      as const, type: 'text' },
                             ] as { label: string; field: keyof CreateDoctorDto; type: string }[]).map(({ label, field, type }) => (
                                 <div key={field}>
                                     <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">{label}</label>
@@ -290,15 +307,35 @@ function AdminPageContent() {
                                     />
                                 </div>
                             ))}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Начало смены *</label>
+                                    <input
+                                        type="time"
+                                        value={addForm.shift_start}
+                                        onChange={e => setAddForm(prev => ({ ...prev, shift_start: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Конец смены *</label>
+                                    <input
+                                        type="time"
+                                        value={addForm.shift_end}
+                                        onChange={e => setAddForm(prev => ({ ...prev, shift_end: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
+                                    />
+                                </div>
+                            </div>
                             <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Специальность *</label>
+                                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">Слот (мин) *</label>
                                 <select
-                                    value={addForm.specialtyId}
-                                    onChange={e => setAddForm(prev => ({ ...prev, specialtyId: Number(e.target.value) }))}
+                                    value={addForm.slot_minutes}
+                                    onChange={e => setAddForm(prev => ({ ...prev, slot_minutes: Number(e.target.value) }))}
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition cursor-pointer"
                                 >
-                                    {specialties.map(s => (
-                                        <option key={s.id} value={s.id}>{s.specialtyName}</option>
+                                    {[15, 20, 30, 45, 60].map(m => (
+                                        <option key={m} value={m}>{m} мин</option>
                                     ))}
                                 </select>
                             </div>

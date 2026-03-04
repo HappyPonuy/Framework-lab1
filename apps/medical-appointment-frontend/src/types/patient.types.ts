@@ -1,62 +1,18 @@
-export interface Patient {
-    id: string;
-    userId: string;
-    email: string;
-    phone: string | null;
-    firstName: string;
-    lastName: string;
-    patronymic: string | null;
-    birthDate: string;
-    gender: 'M' | 'F' | null;
-    createdAt: string;
-    updatedAt: string;
-}
+import type { UsersPatientsInfoResponseDto } from '@contracts/users/patients/info.ts';
+import type { UsersPatientsUpdateRequestDto } from '@contracts/users/patients/update.ts';
+import type { UsersDoctorDto } from '@contracts/users/doctors/get.ts';
+import type { AppointmentDto } from '@contracts/appointments/get.ts';
+import type { AppointmentsCreateRequestDto } from '@contracts/appointments/create.ts';
+
+export type Patient = UsersPatientsInfoResponseDto;
+export type DoctorInfo = UsersDoctorDto;
+export type Appointment = AppointmentDto;
+export type CreateAppointmentDto = AppointmentsCreateRequestDto;
+export type UpdatePatientDto = UsersPatientsUpdateRequestDto;
 
 export interface DoctorSpecialty {
     id: number;
     specialtyName: string;
-}
-
-export interface DoctorInfo {
-    id: string;
-    userId: string;
-    specialtyId: number;
-    specialtyName: string;
-    firstName: string;
-    lastName: string;
-    patronymic: string | null;
-    notes: string | null;
-    isActive: boolean;
-}
-
-export interface Appointment {
-    id: string;
-    patientId: string;
-    doctorId: string;
-    doctorName: string;
-    specialtyName: string;
-    startTime: string;
-    patientNotes: string | null;
-    doctorNotes: string | null;
-    createdAt: string;
-    updatedAt: string;
-}
-
-
-export interface CreateAppointmentDto {
-    doctorId: string;
-    startTime: string;
-    patientNotes?: string;
-}
-
-export interface UpdatePatientDto {
-    email: string;
-    phone: string | null;
-    firstName: string;
-    lastName: string;
-    patronymic: string | null;
-    birthDate: string;
-    gender: 'M' | 'F' | null;
 }
 
 export interface PatientContextType {

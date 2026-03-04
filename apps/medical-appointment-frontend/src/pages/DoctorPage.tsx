@@ -47,7 +47,7 @@ function DoctorPageContent() {
 
     const handleSelectAppointment = (a: DoctorAppointment) => {
         setSelectedAppointment(a)
-        setNotesInput(a.doctorNotes ?? '')
+        setNotesInput(a.doctor_notes ?? '')
     }
 
     const handleSaveNotes = async () => {
@@ -55,8 +55,8 @@ function DoctorPageContent() {
         const notes = notesInput
         setSavingNotes(true)
         try {
-            await updateNotes({ appointmentId: selectedAppointment.id, doctorNotes: notes })
-            setSelectedAppointment(prev => prev ? { ...prev, doctorNotes: notes } : null)
+                            await updateNotes({ appointment_id: selectedAppointment.id, doctor_notes: notes })
+                            setSelectedAppointment(prev => prev ? { ...prev, doctor_notes: notes } : null)
             setSavedToast(true)
             setTimeout(() => setSavedToast(false), 2500)
         } finally {
@@ -65,10 +65,10 @@ function DoctorPageContent() {
     }
 
     const doctorFullName = doctor
-        ? `${doctor.lastName} ${doctor.firstName} ${doctor.patronymic ?? ''}`.trim()
+        ? `${doctor.last_name} ${doctor.first_name} ${doctor.patronymic ?? ''}`.trim()
         : ''
     const doctorInitials = doctor
-        ? `${doctor.lastName[0]}${doctor.firstName[0]}`
+        ? `${doctor.last_name[0]}${doctor.first_name[0]}`
         : '??'
 
     if (loading) {
@@ -102,7 +102,7 @@ function DoctorPageContent() {
                     <div className="flex items-center gap-3">
                         <div className="hidden sm:flex flex-col items-end">
                             <span className="text-xs font-medium text-slate-700">{doctorFullName}</span>
-                            <span className="text-[11px] text-slate-400">{doctor?.specialtyName}</span>
+                            <span className="text-[11px] text-slate-400">{doctor?.specialty}</span>
                         </div>
                         <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
                             {doctorInitials}
@@ -115,7 +115,7 @@ function DoctorPageContent() {
             <main className="max-w-4xl mx-auto px-4 py-6">
 
                 <div className="mb-6">
-                    <h1 className="text-xl font-bold text-slate-900">Добрый день, {doctor?.firstName} 👨‍⚕️</h1>
+                    <h1 className="text-xl font-bold text-slate-900">Добрый день, {doctor?.first_name} 👨‍⚕️</h1>
                     <p className="text-sm text-slate-500 mt-0.5">Сегодня у вас {todayAppointments.length} приёма</p>
                 </div>
 
@@ -123,7 +123,7 @@ function DoctorPageContent() {
                     {[
                         { label: 'Приёмов сегодня',   value: todayAppointments.length, color: 'text-blue-600' },
                         { label: 'Всего записей',     value: appointments.length, color: 'text-indigo-600' },
-                        { label: 'С заметками врача', value: appointments.filter(a => a.doctorNotes).length, color: 'text-green-600' },
+                        { label: 'С заметками врача', value: appointments.filter(a => a.doctor_notes).length, color: 'text-green-600' },
                     ].map(stat => (
                         <div key={stat.label} className="bg-white rounded-2xl p-4 shadow-sm border border-blue-50">
                             <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
@@ -154,27 +154,30 @@ function DoctorPageContent() {
                                 <p className="text-slate-400 text-sm">На сегодня приёмов нет</p>
                             </div>
                         ) : (
-                            todayAppointments.map(a => {
-                                const patientName = `${a.patientLastName} ${a.patientFirstName} ${a.patientPatronymic ?? ''}`.trim()
-                                const age = new Date().getFullYear() - new Date(a.patientBirthDate).getFullYear()
-                                return (
-                                    <div
-                                        key={a.id}
-                                        onClick={() => handleSelectAppointment(a)}
-                                        className="bg-white rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm border border-blue-50 cursor-pointer hover:shadow-md transition"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-sm font-bold text-blue-600">
-                                                {a.startTime}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-semibold text-slate-800">{patientName}</p>
-                                                <p className="text-xs text-slate-400">{age} лет · {a.patientNotes ?? '—'}</p>
-                                            </div>
+                            todayAppointments.map(a => (
+                                <div
+                                    key={a.id}
+                                    onClick={() => handleSelectAppointment(a)}
+                                    className="bg-white rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm border border-blue-50 cursor-pointer hover:shadow-md transition"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="h-10 w-14 rounded-xl bg-blue-50 flex items-center justify-center text-sm font-bold text-blue-600">
+                                            {a.start_time}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-semibold text-slate-800">
+                                                {a.patient_name}
+                                            </p>
+                                            <p className="text-xs text-slate-400">{a.patient_notes ?? '—'}</p>
                                         </div>
                                     </div>
-                                )
-                            })
+                                    {a.doctor_notes && (
+                                        <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">
+                                            Заметка
+                                        </span>
+                                    )}
+                                </div>
+                            ))
                         )}
                     </div>
                 )}
@@ -185,28 +188,58 @@ function DoctorPageContent() {
                             <div className="bg-white rounded-2xl p-5 shadow-sm border border-blue-50 mb-2">
                                 <h3 className="text-sm font-semibold text-slate-700 mb-3">Рабочее расписание</h3>
                                 <div className="grid grid-cols-2 gap-3 text-sm">
-                                    <div><span className="text-slate-400 text-xs uppercase">Дни</span><p className="font-medium text-slate-700 mt-0.5">{formatWorkDays(schedule.workDays)}</p></div>
-                                    <div><span className="text-slate-400 text-xs uppercase">Часы</span><p className="font-medium text-slate-700 mt-0.5">{schedule.startTime} — {schedule.endTime}</p></div>
-                                    <div><span className="text-slate-400 text-xs uppercase">Слот</span><p className="font-medium text-slate-700 mt-0.5">{schedule.slotMinutes} мин</p></div>
+                                    <div>
+                                        <span className="text-slate-400 text-xs uppercase">Дни</span>
+                                        <p className="font-medium text-slate-700 mt-0.5">{formatWorkDays(schedule.work_days)}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-400 text-xs uppercase">Часы</span>
+                                        <p className="font-medium text-slate-700 mt-0.5">{schedule.start_time} — {schedule.end_time}</p>
+                                    </div>
+                                    <div>
+                                        <span className="text-slate-400 text-xs uppercase">Слот</span>
+                                        <p className="font-medium text-slate-700 mt-0.5">{schedule.slot_minutes} мин</p>
+                                    </div>
                                 </div>
                             </div>
                         )}
-                        {appointments.map(a => {
-                            const patientName = `${a.patientLastName} ${a.patientFirstName}`.trim()
-                            return (
-                                <div key={a.id} className="bg-white rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm border border-blue-50">
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex flex-col items-center justify-center h-10 w-14 rounded-xl bg-blue-50 text-blue-700">
-                                            <span className="text-xs font-bold leading-none">{a.startTime}</span>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-semibold text-slate-800">{patientName}</p>
-                                            <p className="text-xs text-slate-400">{a.patientNotes ?? '—'}</p>
-                                        </div>
-                                    </div>
+                        <div className="bg-white rounded-2xl shadow-sm border border-blue-50 overflow-hidden">
+                            <div className="px-5 py-3 border-b border-slate-100">
+                                <h3 className="text-sm font-semibold text-slate-700">Все записи</h3>
+                            </div>
+                            {appointments.length === 0 ? (
+                                <div className="px-5 py-8 text-center">
+                                    <p className="text-slate-400 text-sm">Записей нет</p>
                                 </div>
-                            )
-                        })}
+                            ) : (
+                                <div className="divide-y divide-slate-50">
+                                    {appointments.map(a => (
+                                        <div
+                                            key={a.id}
+                                            onClick={() => handleSelectAppointment(a)}
+                                            className="px-5 py-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex flex-col items-center justify-center h-10 w-14 rounded-xl bg-blue-50 text-blue-700">
+                                                    <span className="text-xs font-bold leading-none">{a.start_time}</span>
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-slate-800">
+                                                        {a.patient_name}
+                                                    </p>
+                                                    <p className="text-xs text-slate-400">{a.patient_notes ?? '—'}</p>
+                                                </div>
+                                            </div>
+                                            {a.doctor_notes && (
+                                                <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">
+                                                    Заметка
+                                                </span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -218,14 +251,14 @@ function DoctorPageContent() {
                             </div>
                             <div>
                                 <p className="font-semibold text-slate-800">{doctorFullName}</p>
-                                <p className="text-sm text-slate-400">{doctor.specialtyName}</p>
+                                <p className="text-sm text-slate-400">{doctor.specialty}</p>
                             </div>
                         </div>
                         <div className="space-y-3">
                             {[
-                                { label: 'Специальность', value: doctor.specialtyName },
+                                { label: 'Специальность', value: doctor.specialty },
                                 { label: 'Заметки', value: doctor.notes ?? '—' },
-                                { label: 'Статус', value: doctor.isActive ? 'Активен' : 'Неактивен' },
+                                { label: 'Статус', value: doctor.is_active ? 'Активен' : 'Неактивен' },
                             ].map(f => (
                                 <div key={f.label} className="flex flex-col gap-0.5">
                                     <span className="text-xs text-slate-400 uppercase tracking-wide">{f.label}</span>
@@ -243,14 +276,14 @@ function DoctorPageContent() {
                         <h2 className="text-lg font-bold text-slate-900 mb-4">Детали приёма</h2>
                         <div className="space-y-3">
                             {[
-                                { label: 'Пациент', value: `${selectedAppointment.patientLastName} ${selectedAppointment.patientFirstName} ${selectedAppointment.patientPatronymic ?? ''}`.trim() },
-                                { label: 'Возраст', value: `${new Date().getFullYear() - new Date(selectedAppointment.patientBirthDate).getFullYear()} лет` },
-                                { label: 'Время приёма', value: selectedAppointment.startTime },
-                                { label: 'Жалоба', value: selectedAppointment.patientNotes ?? '—' },
+                                { label: 'Пациент',       value: selectedAppointment.patient_name },
+                                { label: 'Время приёма',  value: selectedAppointment.start_time },
+                                { label: 'Специальность', value: selectedAppointment.specialty_name },
+                                { label: 'Жалоба',        value: selectedAppointment.patient_notes ?? '—' },
                             ].map(f => (
                                 <div key={f.label} className="flex flex-col gap-0.5">
                                     <span className="text-xs text-slate-400 uppercase tracking-wide">{f.label}</span>
-                                    <span className="text-sm font-medium text-slate-700">{f.value}</span>
+                                    <span className="text-sm font-medium text-slate-700 break-all">{f.value}</span>
                                 </div>
                             ))}
                             <div className="flex flex-col gap-1">

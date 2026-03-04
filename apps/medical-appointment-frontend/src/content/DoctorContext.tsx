@@ -44,7 +44,7 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
     const updateNotes = useCallback(async (dto: UpdateDoctorNotesDto) => {
         await doctorApiRef.current.updateAppointmentNotes(dto);
         setAppointments(prev =>
-            prev.map(a => a.id === dto.appointmentId ? { ...a, doctorNotes: dto.doctorNotes } : a)
+            prev.map(a => a.id === dto.appointment_id ? { ...a, doctor_notes: dto.doctor_notes } : a)
         );
     }, []);
 

@@ -1,40 +1,12 @@
-export interface DoctorProfile {
-    id: string;
-    userId: string;
-    specialtyId: number;
-    specialtyName: string;
-    firstName: string;
-    lastName: string;
-    patronymic: string | null;
-    notes: string | null;
-    isActive: boolean;
-}
+import type { UsersDoctorsInfoResponseDto } from '@contracts/users/doctors/info.ts';
+import type { UsersDoctorsGetScheduleResponseDto } from '@contracts/users/doctors/get_schedule.ts';
+import type { AppointmentDto } from '@contracts/appointments/get.ts';
+import type { AppointmentsUpdateNotesRequestDto } from '@contracts/appointments/update_notes.ts';
 
-export interface DoctorSchedule {
-    id: string;
-    doctorId: string;
-    workDays: number;
-    startTime: string;
-    endTime: string;
-    slotMinutes: number;
-}
-
-export interface DoctorAppointment {
-    id: string;
-    patientId: string;
-    patientFirstName: string;
-    patientLastName: string;
-    patientPatronymic: string | null;
-    patientBirthDate: string;
-    startTime: string;
-    patientNotes: string | null;
-    doctorNotes: string | null;
-}
-
-export interface UpdateDoctorNotesDto {
-    appointmentId: string;
-    doctorNotes: string;
-}
+export type DoctorProfile = UsersDoctorsInfoResponseDto;
+export type DoctorSchedule = UsersDoctorsGetScheduleResponseDto;
+export type DoctorAppointment = AppointmentDto;
+export type UpdateDoctorNotesDto = AppointmentsUpdateNotesRequestDto;
 
 export interface DoctorContextType {
     doctor: DoctorProfile | null;

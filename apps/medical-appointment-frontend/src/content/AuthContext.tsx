@@ -2,10 +2,11 @@ import { createContext, useState, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { http } from '../api/http.ts';
 import { authApi } from '../api/authApi.ts';
-import type { User, AuthContextFullType, LoginResult } from '../types/auth.types.ts';
+import type { User, AuthContextFullType, LoginResult, RegisterFormValues } from '../types/auth.types.ts';
 import { LoginRequestSchema } from '@contracts/auth/login.ts';
 import { LogoutRequestSchema } from '@contracts/auth/logout.ts';
 import { RefreshRequestSchema } from '@contracts/auth/refresh.ts';
+import { RegisterRequestSchema, RegisterResult } from '@contracts/auth/register.ts';
 
 const AuthContext = createContext<AuthContextFullType | null>(null);
 
@@ -13,6 +14,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [token, setTokenState] = useState<string>(localStorage.getItem('token') ?? '');
     const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
     const location = useLocation();
     const PUBLIC_PATHS = ['/', '/patient', '/doctor', '/admin'];
@@ -26,6 +28,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const clearError = () => setError(null);
+
     const getUserInfo = async (currentToken: string): Promise<void> => {
         const res = await http.get<{ user: User }>('/auth/userinfo', {
             headers: { Authorization: `Bearer ${currentToken}` },
@@ -34,9 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const login = async (username: string, password: string): Promise<LoginResult> => {
+        setError(null);
         const parsed = LoginRequestSchema.safeParse({ username, password });
         if (!parsed.success) {
             const msg = parsed.error.issues.map((e: { message: string }) => e.message).join(', ');
+            setError(msg);
             return { success: false, data: msg };
         }
 
@@ -52,6 +58,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (err: unknown) {
             const axiosErr = err as { response?: { data?: { error?: string } } };
             const errmsg = axiosErr.response?.data?.error ?? String(err);
+            setError(errmsg);
+            return { success: false, data: errmsg };
+        }
+    };
+
+    const register = async (values: RegisterFormValues): Promise<LoginResult> => {
+        setError(null);
+
+        if (values.password !== values.confirmPassword) {
+            const msg = 'Пароли не совпадают';
+            setError(msg);
+            return { success: false, data: msg };
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { confirmPassword: _, ...dto } = values;
+        const parsed = RegisterRequestSchema.safeParse(dto);
+        if (!parsed.success) {
+            const msg = parsed.error.issues.map((e: { message: string }) => e.message).join(', ');
+            setError(msg);
+            return { success: false, data: msg };
+        }
+
+        try {
+            const res = await authApi.register(parsed.data);
+            if (res.data.result === RegisterResult.Duplicate) {
+                const msg = 'Пользователь с таким именем уже существует';
+                setError(msg);
+                return { success: false, data: msg };
+            }
+            if (res.data.result !== RegisterResult.Success) {
+                const msg = 'Ошибка регистрации';
+                setError(msg);
+                return { success: false, data: msg };
+            }
+            // После успешной регистрации — сразу войти
+            return await login(values.username, values.password);
+        } catch (err: unknown) {
+            const axiosErr = err as { response?: { data?: { error?: string } } };
+            const errmsg = axiosErr.response?.data?.error ?? String(err);
+            setError(errmsg);
             return { success: false, data: errmsg };
         }
     };
@@ -132,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ user, token, loading, setToken, login, logout, refreshToken }}>
+        <AuthContext.Provider value={{ user, token, loading, error, setToken, login, logout, refreshToken, register, clearError }}>
             {children}
         </AuthContext.Provider>
     );

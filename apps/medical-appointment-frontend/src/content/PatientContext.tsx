@@ -49,7 +49,7 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
     };
 
     const cancelAppointment = async (appointmentId: string) => {
-        await patientApi.cancelAppointment( { appointmentId } );
+        await patientApi.cancelAppointment({ appointment_id: appointmentId });
         setAppointments(prev => prev.filter(a => a.id !== appointmentId));
     };
 

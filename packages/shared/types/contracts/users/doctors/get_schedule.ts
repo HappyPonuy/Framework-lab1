@@ -1,9 +1,8 @@
 export type UsersDoctorsGetScheduleResponseDto = {
     id: string;
-    doctorId: string;
-    workDays: number;
-    startTime: string;
-    endTime: string;
-    slotMinutes: number;
+    doctor_id: string;
+    work_days: number;
+    start_time: string;
+    end_time: string;
+    slot_minutes: number;
 };
-

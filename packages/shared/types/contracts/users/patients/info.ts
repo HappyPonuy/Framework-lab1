@@ -1,14 +1,13 @@
 export type UsersPatientsInfoResponseDto = {
     id: string;
-    userId: string;
+    user_id: string;
     email: string;
     phone: string | null;
-    firstName: string;
-    lastName: string;
+    first_name: string;
+    last_name: string;
     patronymic: string | null;
-    birthDate: string;
-    gender: 'M' | 'F' | null;
-    createdAt: string;
-    updatedAt: string;
+    birth_date: Date;
+    gender: 'M' | 'F';
+    created_at: Date;
+    updated_at: Date;
 };
-

@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { LoginFormValues } from '../types/auth.types.ts';
+import type { RegisterFormValues } from '../types/auth.types.ts';
 import { useAuth as useAuthContext } from '../content/AuthContext.tsx';
-import { LoginRequestSchema } from '@contracts/auth/login.ts';
 import { RegisterRequestSchema, RegisterResult } from '@contracts/auth/register.ts';
 import { authApi } from '../api/authApi.ts';
 
@@ -12,20 +11,11 @@ export function useAuth() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const login = async (data: LoginFormValues) => {
-        const parsed = LoginRequestSchema.safeParse({
-            username: data.email,
-            password: data.password,
-        });
-        if (!parsed.success) {
-            setError(parsed.error.issues.map((e: { message: string }) => e.message).join(', '));
-            return;
-        }
-
+    const login = async (username: string, password: string) => {
         setLoading(true);
         setError(null);
         try {
-            const result = await ctxLogin(parsed.data.username, parsed.data.password);
+            const result = await ctxLogin(username, password);
             if (result.success) {
                 navigate('/');
             } else {
@@ -39,17 +29,16 @@ export function useAuth() {
         }
     };
 
-    const register = async (data: LoginFormValues) => {
+    const register = async (data: RegisterFormValues) => {
         if (data.password !== data.confirmPassword) {
             setError('Пароли не совпадают');
             return;
         }
 
-        const parsed = RegisterRequestSchema.safeParse({
-            username: data.email,
-            password: data.password,
-            role: 'P',
-        });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { confirmPassword: _, ...dto } = data;
+
+        const parsed = RegisterRequestSchema.safeParse({ ...dto, role: 'P' });
         if (!parsed.success) {
             setError(parsed.error.issues.map((e: { message: string }) => e.message).join(', '));
             return;
@@ -58,23 +47,19 @@ export function useAuth() {
         setLoading(true);
         setError(null);
         try {
-            const response = await authApi.register({
-                username: parsed.data.username,
-                password: parsed.data.password,
-                role: parsed.data.role,
-            });
-
+            const response = await authApi.register(parsed.data);
             const registerData = response.data;
 
             if (registerData.result === RegisterResult.Duplicate) {
                 setError('Пользователь с таким именем уже существует');
                 return;
             }
-            if (registerData.result === RegisterResult.Error || !registerData.userId) {
+            if (registerData.result === RegisterResult.Error || !registerData.user_id) {
                 setError('Ошибка регистрации на сервере');
                 return;
             }
 
+            // После успешной регистрации — сразу войти
             const result = await ctxLogin(parsed.data.username, parsed.data.password);
             if (result.success) {
                 navigate('/');
