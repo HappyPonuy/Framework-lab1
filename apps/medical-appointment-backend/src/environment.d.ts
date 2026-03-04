@@ -1,5 +1,7 @@
 export {};
 
+import { UserInfo } from "@custom_types/userinfo";
+
 declare global {
     namespace NodeJS {
         interface ProcessEnv {
@@ -13,6 +15,12 @@ declare global {
             DB_PASS: string;
             DB_HOST: string;
             DB_PORT: string;
+        }
+    }
+
+    namespace Express {
+        interface Request {
+            user?: UserInfo;
         }
     }
 }
