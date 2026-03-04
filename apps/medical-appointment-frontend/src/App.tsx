@@ -13,7 +13,8 @@ function RoleRouter() {
     const { user } = useAuth()
     if (user?.role === 'A') return <AdminPage />
     if (user?.role === 'D') return <DoctorPage />
-    return <HomePage />
+    if (user?.role === 'P') return <HomePage />
+    return <AuthPage />
 }
 
 function App() {
