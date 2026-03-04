@@ -3,12 +3,29 @@ import AuthService from "./service.js";
 import { InvalidCredentialsError } from "@errors/invalidcredentials";
 import { InvalidTokenError } from "@errors/invalidtoken";
 
+import type { RegisterRequestDto } from "@contracts/auth/register.js";
 import type { LoginRequestDto } from "@contracts/auth/login.js";
 import type { LogoutRequestDto } from "@contracts/auth/logout.js";
 import type { RefreshRequestDto } from "@contracts/auth/refresh.js";
 
 export default class AuthController {
     constructor(private service: AuthService) {}
+
+    async register(req: Request, res: Response, next: NextFunction) {
+        try {
+            const credentials = req.body as RegisterRequestDto;
+            
+            const { result, userId } = await this.service.register(
+                credentials.username, 
+                credentials.password, 
+                "P" // Эндпоинт для произвольной регистрации пациентов => ставим роль 'P'
+            );
+
+            res.status(200).json({ result, userId });
+        } catch (err) {
+            next(err);
+        }
+    }
 
     async login(req: Request, res: Response, next: NextFunction) {
         try {
