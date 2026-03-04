@@ -1,5 +1,7 @@
 import type { AxiosInstance } from 'axios';
-import type { DoctorProfile, DoctorSchedule, DoctorAppointment, UpdateDoctorNotesDto } from '../types/doctor.types.ts';
+import type { DoctorProfile, DoctorSchedule, DoctorAppointment } from '../types/doctor.types.ts';
+import type { GetDoctorProfileResponseDto, GetDoctorScheduleResponseDto } from '@contracts/doctor/get-profile.ts';
+import type { GetDoctorAppointmentsResponseDto, UpdateAppointmentNotesRequestDto, UpdateAppointmentNotesResponseDto } from '@contracts/doctor/appointments.ts';
 
 
 const MOCK_DOCTOR_PROFILE: DoctorProfile = {
@@ -34,23 +36,23 @@ const MOCK_DOCTOR_APPOINTMENTS: DoctorAppointment[] = [
 
 export function createDoctorApi(_axios: AxiosInstance) {
     return {
-        async fetchProfile(): Promise<DoctorProfile> {
-            // return (await axios.get<DoctorProfile>('/doctor/profile')).data;
+        async fetchProfile(): Promise<GetDoctorProfileResponseDto> {
+            // return (await _axios.get<GetDoctorProfileResponseDto>('/doctor/profile')).data;
             return Promise.resolve(MOCK_DOCTOR_PROFILE);
         },
 
-        async fetchSchedule(): Promise<DoctorSchedule> {
-            // return (await axios.get<DoctorSchedule>('/doctor/schedule')).data;
+        async fetchSchedule(): Promise<GetDoctorScheduleResponseDto> {
+            // return (await _axios.get<GetDoctorScheduleResponseDto>('/doctor/schedule')).data;
             return Promise.resolve(MOCK_SCHEDULE);
         },
 
-        async fetchAppointments(): Promise<DoctorAppointment[]> {
-            // return (await axios.get<DoctorAppointment[]>('/doctor/appointments')).data;
+        async fetchAppointments(): Promise<GetDoctorAppointmentsResponseDto> {
+            // return (await _axios.get<GetDoctorAppointmentsResponseDto>('/doctor/appointments')).data;
             return Promise.resolve(MOCK_DOCTOR_APPOINTMENTS);
         },
 
-        async updateAppointmentNotes(dto: UpdateDoctorNotesDto): Promise<void> {
-            // await axios.patch(`/doctor/appointments/${dto.appointmentId}/notes`, { doctorNotes: dto.doctorNotes });
+        async updateAppointmentNotes(dto: UpdateAppointmentNotesRequestDto): Promise<UpdateAppointmentNotesResponseDto> {
+            // await _axios.patch<UpdateAppointmentNotesResponseDto>(`/doctor/appointments/${dto.appointmentId}/notes`, { doctorNotes: dto.doctorNotes });
             const idx = MOCK_DOCTOR_APPOINTMENTS.findIndex(a => a.id === dto.appointmentId);
             if (idx !== -1) MOCK_DOCTOR_APPOINTMENTS[idx].doctorNotes = dto.doctorNotes;
         },

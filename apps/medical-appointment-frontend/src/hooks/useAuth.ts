@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { http } from '../api/http.ts';
 import type { LoginFormValues } from '../types/auth.types.ts';
 import { useAuth as useAuthContext } from '../content/AuthContext.tsx';
 import { LoginRequestSchema } from '@contracts/auth/login.ts';
 import { RegisterRequestSchema, RegisterResult } from '@contracts/auth/register.ts';
-import type { RegisterResponseDto } from '@contracts/auth/register.ts';
+import { authApi } from '../api/authApi.ts';
 
 export function useAuth() {
     const { login: ctxLogin, logout: ctxLogout } = useAuthContext();
@@ -59,7 +58,7 @@ export function useAuth() {
         setLoading(true);
         setError(null);
         try {
-            const response = await http.post<RegisterResponseDto>('/auth/register', {
+            const response = await authApi.register({
                 username: parsed.data.username,
                 password: parsed.data.password,
                 role: parsed.data.role,

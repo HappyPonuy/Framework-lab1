@@ -1,6 +1,16 @@
 import type { AxiosInstance } from 'axios';
-import type { AdminUser, AdminDoctor, AdminAppointment, CreateDoctorDto } from '../types/admin.types.ts';
+import type { AdminUser, AdminDoctor, AdminAppointment } from '../types/admin.types.ts';
 import type { DoctorSpecialty } from '../types/patient.types.ts';
+import type {
+    GetAdminUsersResponseDto,
+    GetAdminDoctorsResponseDto,
+    GetAdminAppointmentsResponseDto,
+    GetAdminSpecialtiesResponseDto,
+    CreateDoctorRequestDto,
+    CreateDoctorResponseDto,
+    ToggleDoctorActiveResponseDto,
+    DeleteAppointmentResponseDto,
+} from '@contracts/admin/index.ts';
 
 
 const MOCK_USERS: AdminUser[] = [
@@ -38,40 +48,40 @@ const MOCK_ADMIN_APPOINTMENTS: AdminAppointment[] = [
 
 export function createAdminApi(_axios: AxiosInstance) {
     return {
-        async fetchAllUsers(): Promise<AdminUser[]> {
-            // return (await axios.get<AdminUser[]>('/admin/users')).data;
+        async fetchAllUsers(): Promise<GetAdminUsersResponseDto> {
+            // return (await _axios.get<GetAdminUsersResponseDto>('/admin/users')).data;
             return Promise.resolve(MOCK_USERS);
         },
 
-        async fetchAllDoctors(): Promise<AdminDoctor[]> {
-            // return (await axios.get<AdminDoctor[]>('/admin/doctors')).data;
+        async fetchAllDoctors(): Promise<GetAdminDoctorsResponseDto> {
+            // return (await _axios.get<GetAdminDoctorsResponseDto>('/admin/doctors')).data;
             return Promise.resolve(MOCK_ADMIN_DOCTORS);
         },
 
-        async fetchAllAppointments(): Promise<AdminAppointment[]> {
-            // return (await axios.get<AdminAppointment[]>('/admin/appointments')).data;
+        async fetchAllAppointments(): Promise<GetAdminAppointmentsResponseDto> {
+            // return (await _axios.get<GetAdminAppointmentsResponseDto>('/admin/appointments')).data;
             return Promise.resolve(MOCK_ADMIN_APPOINTMENTS);
         },
 
-        async fetchAllSpecialties(): Promise<DoctorSpecialty[]> {
-            // return (await axios.get<DoctorSpecialty[]>('/admin/specialties')).data;
+        async fetchAllSpecialties(): Promise<GetAdminSpecialtiesResponseDto> {
+            // return (await _axios.get<GetAdminSpecialtiesResponseDto>('/admin/specialties')).data;
             return Promise.resolve(MOCK_SPECIALTIES);
         },
 
-        async toggleDoctorActive(doctorId: string, isActive: boolean): Promise<void> {
-            // await axios.patch(`/admin/doctors/${doctorId}`, { isActive });
+        async toggleDoctorActive(doctorId: string, dto: import('@contracts/admin/index.ts').ToggleDoctorActiveRequestDto): Promise<ToggleDoctorActiveResponseDto> {
+            // await _axios.patch<ToggleDoctorActiveResponseDto>(`/admin/doctors/${doctorId}`, dto);
             const idx = MOCK_ADMIN_DOCTORS.findIndex(d => d.id === doctorId);
-            if (idx !== -1) MOCK_ADMIN_DOCTORS[idx].isActive = isActive;
+            if (idx !== -1) MOCK_ADMIN_DOCTORS[idx].isActive = dto.isActive;
         },
 
-        async deleteAppointment(appointmentId: string): Promise<void> {
-            // await axios.delete(`/admin/appointments/${appointmentId}`);
+        async deleteAppointment(appointmentId: string): Promise<DeleteAppointmentResponseDto> {
+            // await _axios.delete<DeleteAppointmentResponseDto>(`/admin/appointments/${appointmentId}`);
             const idx = MOCK_ADMIN_APPOINTMENTS.findIndex(a => a.id === appointmentId);
             if (idx !== -1) MOCK_ADMIN_APPOINTMENTS.splice(idx, 1);
         },
 
-        async createDoctor(dto: CreateDoctorDto): Promise<AdminDoctor> {
-            // return (await axios.post<AdminDoctor>('/admin/doctors', dto)).data;
+        async createDoctor(dto: CreateDoctorRequestDto): Promise<CreateDoctorResponseDto> {
+            // return (await _axios.post<CreateDoctorResponseDto>('/admin/doctors', dto)).data;
             const specialty = MOCK_SPECIALTIES.find(s => s.id === dto.specialtyId);
             const newDoctor: AdminDoctor = {
                 id: `d-${Date.now()}`,
