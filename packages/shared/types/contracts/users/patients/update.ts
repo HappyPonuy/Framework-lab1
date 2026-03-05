@@ -1,12 +1,13 @@
 import { z } from "zod";
 
 export const UsersPatientsUpdateRequestSchema = z.object({
+    id: z.string(),
     email: z.email({ message: 'Некорректный email' }),
     phone: z.string().nullable(),
     first_name: z.string().min(1, { message: 'Имя обязательно' }),
     last_name: z.string().min(1, { message: 'Фамилия обязательна' }),
     patronymic: z.string().nullable(),
-    birth_date: z.string().min(1, { message: 'Дата рождения обязательна' }),
+    birth_date: z.date({ message: 'Некорректная дата рождения' }),
     gender: z.enum(['M', 'F']),
 });
 
