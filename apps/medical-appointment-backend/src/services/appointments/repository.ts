@@ -59,9 +59,9 @@ export default class AppointmentsRepository {
                 `WITH inserted_appointment AS (
                     INSERT INTO appointments (patient_id, doctor_id, start_time, patient_notes)
                     VALUES ($1, $2, $3, $4)
-                    RETURNING id
+                    RETURNING *
                 )
-                SELECT * FROM appointments a WHERE a.id = inserted_appointment.id`,
+                SELECT * FROM inserted_appointment`,
                 [
                     appointmentData.patient_id,
                     appointmentData.doctor_id,
