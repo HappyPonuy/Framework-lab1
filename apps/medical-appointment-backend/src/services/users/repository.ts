@@ -78,11 +78,11 @@ export default class UsersRepository {
                         birth_date = $6,
                         gender = $7,
                         updated_at = NOW()
-                    WHERE id = $8
+                    WHERE user_id = $8
                 )
                 SELECT * 
                 FROM patients 
-                WHERE id = $8
+                WHERE user_id = $8
                 `,
                 [
                     patientData.email,
