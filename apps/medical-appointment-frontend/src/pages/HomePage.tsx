@@ -36,7 +36,7 @@ function HomePageContent() {
     const [patientNotes, setPatientNotes] = useState('')
     const [booking, setBooking] = useState(false)
     const [showEditModal, setShowEditModal] = useState(false)
-    const [editForm, setEditForm] = useState<UpdatePatientDto | null>(null)
+    const [editForm, setEditForm] = useState<Omit<UpdatePatientDto, 'birth_date'> & { birth_date: string } | null>(null)
     const [saving, setSaving] = useState(false)
 
     const timeSlots = useMemo(() => {
@@ -60,10 +60,14 @@ function HomePageContent() {
         if (!selectedDoctor || !selectedTime) return
         setBooking(true)
         try {
+            const [hours, minutes] = selectedTime.split(':').map(Number)
+            const startTime = new Date()
+            startTime.setHours(hours, minutes, 0, 0)
+
             const dto: CreateAppointmentDto = {
-                doctor_id: selectedDoctor.id,
-                start_time: selectedTime,
-                patient_notes: patientNotes.trim() || undefined,
+                doctor_id:     selectedDoctor.id,
+                start_time:    startTime,
+                patient_notes: patientNotes.trim() || null,
             }
             await bookAppointment(dto)
             setShowBookingModal(false)
@@ -90,14 +94,16 @@ function HomePageContent() {
         if (!editForm) return
         setSaving(true)
         try {
-            await updateProfile(editForm)
+            await updateProfile({ ...editForm, birth_date: new Date(editForm.birth_date) })
             setShowEditModal(false)
         } finally {
             setSaving(false)
         }
     }
 
-    const initials = user?.username?.slice(0, 2).toUpperCase() ?? '??'
+    const initials = patient
+        ? `${patient.last_name[0]}${patient.first_name[0]}`.toUpperCase()
+        : user?.username?.slice(0, 2).toUpperCase() ?? '??'
     const displayName = patient
         ? `${patient.last_name} ${patient.first_name} ${patient.patronymic ?? ''}`.trim()
         : user?.username ?? ''
@@ -151,7 +157,7 @@ function HomePageContent() {
 
                 <div className="mb-6">
                     <h1 className="text-xl font-bold text-slate-900">
-                        Добро пожаловать, {patient?.first_name ?? user?.username} 👋
+                        Добро пожаловать, {patient?.first_name ?? user?.username}
                     </h1>
                     <p className="text-sm text-slate-500 mt-0.5">Управляйте своими записями к врачу</p>
                 </div>
@@ -192,17 +198,27 @@ function HomePageContent() {
                             </div>
                         ) : (
                             appointments.map(a => {
+                                    const doc = doctors.find(d => d.id === a.doctor_id)
+                                    const doctorName = doc
+                                        ? `${doc.last_name} ${doc.first_name} ${doc.patronymic || ''}`.trim()
+                                        : `Врач`
+                                    const specialtyName = doc?.specialty ?? ''
+                                    const startTimeStr = new Date(a.start_time).toLocaleString('ru-RU', {
+                                        day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                                    })
+                                    const docInitials = doc ? `${doc.last_name[0]}${doc.first_name[0]}` : '??';
+
+                                    const isCancellable = a.progress === 'Назначен';
+
                                     return (
                                         <div key={a.id} className="bg-white rounded-2xl px-5 py-4 flex items-center justify-between shadow-sm border border-blue-50">
                                             <div className="flex items-center gap-4">
-                                                <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                                                    <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-                                                    </svg>
+                                                <div className="h-10 w-10 rounded-xl bg-blue-600 flex items-center justify-center text-xs font-bold text-white shadow shadow-blue-600/20">
+                                                    {docInitials}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-semibold text-slate-800">{a.doctor_name}</p>
-                                                    <p className="text-xs text-slate-400">{a.specialty_name} · {a.start_time}</p>
+                                                    <p className="text-sm font-semibold text-slate-800">{doctorName}</p>
+                                                    <p className="text-xs text-slate-400">{specialtyName} · {startTimeStr}</p>
                                                     {a.patient_notes && (
                                                         <p className="text-xs text-slate-500 mt-0.5">Жалоба: {a.patient_notes}</p>
                                                     )}
@@ -211,14 +227,19 @@ function HomePageContent() {
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => cancelAppointment(a.id)}
-                                                    className="text-xs text-red-400 hover:text-red-600 transition px-1 cursor-pointer"
-                                                    title="Отменить"
-                                                >
-                                                    ✕
-                                                </button>
+                                            <div className="flex flex-row items-center gap-1">
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${a.progress === 'Отменен' ? 'bg-red-50 text-red-600 border-red-100' : a.progress === 'Завершен' ?  'bg-red-50 text-green-600 border-green-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                                                    {a.progress}
+                                                </span>
+                                                {isCancellable && (
+                                                    <button
+                                                        onClick={() => cancelAppointment(a.id)}
+                                                        className="text-xs text-red-400 hover:text-red-600 transition px-1 cursor-pointer"
+                                                        title="Отменить"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     )

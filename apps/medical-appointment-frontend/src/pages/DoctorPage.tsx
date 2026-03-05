@@ -8,6 +8,12 @@ const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 function formatWorkDays(mask: number): string {
     return DAY_NAMES.filter((_, i) => mask & (1 << i)).join(', ')
 }
+function formatTime(date: Date | string): string {
+    return new Date(date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+}
+function formatDateTime(date: Date | string): string {
+    return new Date(date).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
+}
 
 function MedLogo() {
     return (
@@ -31,7 +37,7 @@ function MedLogo() {
 
 function DoctorPageContent() {
     const { logout } = useAuth()
-    const { doctor, schedule, appointments, todayAppointments, loading, error, updateNotes } = useDoctor()
+    const { doctor, schedule, appointments, todayAppointments, patients, loading, error, updateNotes } = useDoctor()
 
     const [activeTab, setActiveTab] = useState<'today' | 'schedule' | 'profile'>('today')
     const [selectedAppointment, setSelectedAppointment] = useState<DoctorAppointment | null>(null)
@@ -56,7 +62,7 @@ function DoctorPageContent() {
         setSavingNotes(true)
         try {
                             await updateNotes({ appointment_id: selectedAppointment.id, doctor_notes: notes })
-                            setSelectedAppointment(prev => prev ? { ...prev, doctor_notes: notes } : null)
+                            setSelectedAppointment((prev: DoctorAppointment | null) => prev ? { ...prev, doctor_notes: notes } : null)
             setSavedToast(true)
             setTimeout(() => setSavedToast(false), 2500)
         } finally {
@@ -115,15 +121,15 @@ function DoctorPageContent() {
             <main className="max-w-4xl mx-auto px-4 py-6">
 
                 <div className="mb-6">
-                    <h1 className="text-xl font-bold text-slate-900">Добрый день, {doctor?.first_name} 👨‍⚕️</h1>
-                    <p className="text-sm text-slate-500 mt-0.5">Сегодня у вас {todayAppointments.length} приёма</p>
+                    <h1 className="text-xl font-bold text-slate-900">Добрый день, {doctor?.first_name} ️</h1>
+                    <p className="text-sm text-slate-500 mt-0.5">Сегодня у вас {todayAppointments.length} приёмов</p>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3 mb-6">
                     {[
                         { label: 'Приёмов сегодня',   value: todayAppointments.length, color: 'text-blue-600' },
                         { label: 'Всего записей',     value: appointments.length, color: 'text-indigo-600' },
-                        { label: 'С заметками врача', value: appointments.filter(a => a.doctor_notes).length, color: 'text-green-600' },
+                        { label: 'Завершенных',       value: appointments.filter(a => a.progress === 'Завершен').length, color: 'text-green-600' },
                     ].map(stat => (
                         <div key={stat.label} className="bg-white rounded-2xl p-4 shadow-sm border border-blue-50">
                             <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
@@ -154,7 +160,13 @@ function DoctorPageContent() {
                                 <p className="text-slate-400 text-sm">На сегодня приёмов нет</p>
                             </div>
                         ) : (
-                            todayAppointments.map(a => (
+                            todayAppointments.map(a => {
+                                const patient = patients.find(p => p.id === a.patient_id)
+                                const patientName = patient
+                                    ? `${patient.last_name} ${patient.first_name} ${patient.patronymic ?? ''}`.trim()
+                                    : a.patient_id
+
+                                return (
                                 <div
                                     key={a.id}
                                     onClick={() => handleSelectAppointment(a)}
@@ -162,22 +174,20 @@ function DoctorPageContent() {
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="h-10 w-14 rounded-xl bg-blue-50 flex items-center justify-center text-sm font-bold text-blue-600">
-                                            {a.start_time}
+                                            {formatTime(a.start_time)}
                                         </div>
                                         <div>
                                             <p className="text-sm font-semibold text-slate-800">
-                                                {a.patient_name}
+                                                Пациент: {patientName}
                                             </p>
                                             <p className="text-xs text-slate-400">{a.patient_notes ?? '—'}</p>
                                         </div>
                                     </div>
-                                    {a.doctor_notes && (
-                                        <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">
-                                            Заметка
-                                        </span>
-                                    )}
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${a.progress === 'Завершен' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                                        {a.progress}
+                                    </span>
                                 </div>
-                            ))
+                            )})
                         )}
                     </div>
                 )}
@@ -194,7 +204,7 @@ function DoctorPageContent() {
                                     </div>
                                     <div>
                                         <span className="text-slate-400 text-xs uppercase">Часы</span>
-                                        <p className="font-medium text-slate-700 mt-0.5">{schedule.start_time} — {schedule.end_time}</p>
+                                        <p className="font-medium text-slate-700 mt-0.5">{schedule.shift_start} — {schedule.shift_end}</p>
                                     </div>
                                     <div>
                                         <span className="text-slate-400 text-xs uppercase">Слот</span>
@@ -213,7 +223,13 @@ function DoctorPageContent() {
                                 </div>
                             ) : (
                                 <div className="divide-y divide-slate-50">
-                                    {appointments.map(a => (
+                                    {appointments.map(a => {
+                                        const patient = patients.find(p => p.id === a.patient_id)
+                                        const patientName = patient
+                                            ? `${patient.last_name} ${patient.first_name} ${patient.patronymic ?? ''}`.trim()
+                                            : a.patient_id
+
+                                        return (
                                         <div
                                             key={a.id}
                                             onClick={() => handleSelectAppointment(a)}
@@ -221,22 +237,23 @@ function DoctorPageContent() {
                                         >
                                             <div className="flex items-center gap-4">
                                                 <div className="flex flex-col items-center justify-center h-10 w-14 rounded-xl bg-blue-50 text-blue-700">
-                                                    <span className="text-xs font-bold leading-none">{a.start_time}</span>
+                                                    <span className="text-xs font-bold leading-none">{formatTime(a.start_time)}</span>
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-semibold text-slate-800">
-                                                        {a.patient_name}
+                                                        Пациент: {patientName}
                                                     </p>
-                                                    <p className="text-xs text-slate-400">{a.patient_notes ?? '—'}</p>
+                                                    <p className="text-xs text-slate-400">
+                                                        {a.patient_notes ?? '—'}
+                                                        <span className="ml-2 text-slate-300">|</span> <span className="text-slate-400">Обн: {formatDateTime(a.updated_at)}</span>
+                                                    </p>
                                                 </div>
                                             </div>
-                                            {a.doctor_notes && (
-                                                <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full">
-                                                    Заметка
-                                                </span>
-                                            )}
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${a.progress === 'Завершен' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                                                {a.progress}
+                                            </span>
                                         </div>
-                                    ))}
+                                    )})}
                                 </div>
                             )}
                         </div>
@@ -256,13 +273,14 @@ function DoctorPageContent() {
                         </div>
                         <div className="space-y-3">
                             {[
-                                { label: 'Специальность', value: doctor.specialty },
-                                { label: 'Заметки', value: doctor.notes ?? '—' },
-                                { label: 'Статус', value: doctor.is_active ? 'Активен' : 'Неактивен' },
+                                { label: 'Рабочие дни',value: `${doctor.work_days} (${formatWorkDays(doctor.work_days)})` },
+                                { label: 'Смена',             value: `${doctor.shift_start} — ${doctor.shift_end}` },
+                                { label: 'Длительность приема', value: `${doctor.slot_minutes} мин.` },
+                                { label: 'Статус',            value: doctor.is_active ? 'Активен' : 'Неактивен' },
                             ].map(f => (
                                 <div key={f.label} className="flex flex-col gap-0.5">
                                     <span className="text-xs text-slate-400 uppercase tracking-wide">{f.label}</span>
-                                    <span className="text-sm font-medium text-slate-700">{f.value}</span>
+                                    <span className="text-sm font-medium text-slate-700 break-words">{f.value}</span>
                                 </div>
                             ))}
                         </div>
@@ -275,17 +293,25 @@ function DoctorPageContent() {
                     <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
                         <h2 className="text-lg font-bold text-slate-900 mb-4">Детали приёма</h2>
                         <div className="space-y-3">
-                            {[
-                                { label: 'Пациент',       value: selectedAppointment.patient_name },
-                                { label: 'Время приёма',  value: selectedAppointment.start_time },
-                                { label: 'Специальность', value: selectedAppointment.specialty_name },
-                                { label: 'Жалоба',        value: selectedAppointment.patient_notes ?? '—' },
-                            ].map(f => (
-                                <div key={f.label} className="flex flex-col gap-0.5">
-                                    <span className="text-xs text-slate-400 uppercase tracking-wide">{f.label}</span>
-                                    <span className="text-sm font-medium text-slate-700 break-all">{f.value}</span>
-                                </div>
-                            ))}
+                            {(() => {
+                                const patient = patients.find(p => p.id === selectedAppointment.patient_id)
+                                const patientName = patient
+                                    ? `${patient.last_name} ${patient.first_name} ${patient.patronymic ?? ''}`.trim()
+                                    : selectedAppointment.patient_id
+
+                                return [
+                                    { label: 'Пациент',      value: patientName },
+                                    { label: 'Время приёма', value: formatDateTime(selectedAppointment.start_time) },
+                                    { label: 'Обновлено',    value: formatDateTime(selectedAppointment.updated_at) },
+                                    { label: 'Статус',       value: selectedAppointment.progress },
+                                    { label: 'Жалоба',       value: selectedAppointment.patient_notes ?? '—' },
+                                ].map(f => (
+                                    <div key={f.label} className="flex flex-col gap-0.5">
+                                        <span className="text-xs text-slate-400 uppercase tracking-wide">{f.label}</span>
+                                        <span className="text-sm font-medium text-slate-700 break-words">{f.value}</span>
+                                    </div>
+                                ))
+                            })()}
                             <div className="flex flex-col gap-1">
                                 <span className="text-xs text-slate-400 uppercase tracking-wide">Заметки врача</span>
                                 <textarea
