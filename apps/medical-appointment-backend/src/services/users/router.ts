@@ -18,6 +18,6 @@ router.get("/patients/get", validateAuth(), validateUserRole("D", "A"), controll
 router.get("/doctors/get", validateAuth(), validateUserRole("P", "A"), controller.doctorsGet.bind(controller));
 router.get("/patients/info", validateAuth(), validateUserRole("P", "A"), validateQuery(UsersPatientsInfoRequestSchema), controller.patientsInfo.bind(controller));
 router.get("/doctors/info", validateAuth(), validateUserRole("D", "A"), validateQuery(UsersDoctorsInfoRequestSchema), controller.doctorsInfo.bind(controller));
-router.post("/patients/update", validateAuth(), validateUserRole("P", "A"), validateBody(UsersPatientsUpdateRequestSchema), controller.patientsUpdate.bind(controller));
+router.post("/patients/update", validateAuth(), validateUserRole("P"), validateBody(UsersPatientsUpdateRequestSchema), controller.patientsUpdate.bind(controller));
 
 export default router;
