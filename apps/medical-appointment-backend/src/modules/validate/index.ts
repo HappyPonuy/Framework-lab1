@@ -17,11 +17,11 @@ export const validateBody = (schema: ZodType) => (req: Request, res: Response, n
     next();
 };
 
-export const validateParams = (schema: ZodType) => (req: Request, res: Response, next: NextFunction) => {
-    const parsed = schema.safeParse(req.params);
+export const validateQuery = (schema: ZodType) => (req: Request, res: Response, next: NextFunction) => {
+    const parsed = schema.safeParse(req.query);
     if (!parsed.success) return next(new SchemaMismatchError());
 
-    req.params = parsed.data as Record<string, string>;
+    req.parsedQuery = parsed.data as Record<string, string>;
     next();
 };
 
@@ -44,7 +44,7 @@ export const validateAuth =  () => (req: Request, res: Response, next: NextFunct
 };
 
 export const validateUserRole = (...allowedRoles: UserRole[]) => (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) return next(new SchemaMismatchError());
+    if (!req.user) return next(new UnauthorizedError());
     if (!allowedRoles.includes(req.user.user_role)) return next(new UnauthorizedError());
     next();
 };

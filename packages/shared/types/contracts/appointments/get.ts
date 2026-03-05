@@ -1,15 +1,5 @@
-export type AppointmentDto = {
-    id: string;
-    patient_id: string;
-    patient_name: string;
-    doctor_id: string;
-    doctor_name: string;
-    specialty_name: string;
-    start_time: string;
-    patient_notes: string | null;
-    doctor_notes: string | null;
-    created_at: string;
-    updated_at: string;
-};
+import type { AppointmentInfo } from "@shared/types/data/appointmentinfo.js";
 
-export type AppointmentsGetResponseDto = AppointmentDto[];
+export type AppointmentsGetRequestDto = void;
+
+export type AppointmentsGetResponseDto = AppointmentInfo[];

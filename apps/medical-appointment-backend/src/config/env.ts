@@ -17,5 +17,8 @@ export const env = {
     DB_USER:            process.env.DB_USER,
     DB_PASS:            process.env.DB_PASS,
     DB_HOST:            process.env.DB_HOST,
-    DB_PORT:            process.env.DB_PORT
+    DB_PORT:            process.env.DB_PORT,
+    AUTH_SERVICE_URL:   process.env.AUTH_SERVICE_URL,
+    USERS_SERVICE_URL:  process.env.USERS_SERVICE_URL,
+    APPOINTMENTS_SERVICE_URL: process.env.APPOINTMENTS_SERVICE_URL,
 } as const;
