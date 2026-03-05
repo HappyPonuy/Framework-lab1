@@ -67,23 +67,18 @@ export default class UsersRepository {
     async updatePatient(patientId: string, patientData: VolatilePatientInfo): Promise<PatientInfo | null> {
         try {
             const updatePatientQueryResult = await this.db.query(
-                `WITH updated AS (
-                    UPDATE patients 
-                    SET 
-                        email = $1, 
-                        phone = $2, 
-                        first_name = $3,
-                        last_name = $4,
-                        patronymic = $5,
-                        birth_date = $6,
-                        gender = $7,
-                        updated_at = NOW()
-                    WHERE user_id = $8
-                )
-                SELECT * 
-                FROM patients 
+                `UPDATE patients 
+                SET 
+                    email = $1, 
+                    phone = $2, 
+                    first_name = $3,
+                    last_name = $4,
+                    patronymic = $5,
+                    birth_date = $6,
+                    gender = $7,
+                    updated_at = NOW()
                 WHERE user_id = $8
-                `,
+                RETURNING *`,
                 [
                     patientData.email,
                     patientData.phone,
