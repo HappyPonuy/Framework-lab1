@@ -55,7 +55,7 @@ export default class UsersController {
         try {
             const patientData = req.body as UsersPatientsUpdateRequestDto;
             const patientInfo = patientData as VolatilePatientInfo;
-            const updatedPatientInfo = await this.service.updatePatientInfo(patientData.id, patientInfo);
+            const updatedPatientInfo = await this.service.updatePatientInfo(req.user!.user_id, patientInfo);
             if (!updatedPatientInfo) return next(new UpdatePatientError());
             res.status(200).json(updatedPatientInfo);
         } catch (err) {
