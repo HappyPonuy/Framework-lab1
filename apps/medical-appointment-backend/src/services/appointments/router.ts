@@ -7,7 +7,7 @@ import AppointmentsService from "./service.js";
 import AppointmentsController from "./controller.js";
 
 import { AppointmentsCreateRequestSchema } from "@contracts/appointments/create.js";
-import { AppointmentsCompleteRequestSchema } from "@shared/types/contracts/appointments/complete.js";
+import { AppointmentsCompleteRequestSchema } from "@contracts/appointments/complete.js";
 
 const usersClient = new HTTPClient(process.env.USERS_SERVICE_URL!);
 
