@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { AdminUser, AdminDoctor, AdminAppointment, AdminContextType, CreateDoctorDto } from '../types/admin.types.ts';
-import type { DoctorSpecialty } from '@shared/types/data/doctorinfo.ts';
-import type { PatientInfo } from '@shared/types/data/patientinfo.ts';
+import type { PatientInfo } from '@shared/types/data/patientinfo.d.ts';
 import { createAdminApi } from '../api/adminApi.ts';
 import { useApi } from '../hooks/useApi.ts';
 
@@ -16,7 +15,6 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const [users, setUsers]               = useState<AdminUser[]>([]);
     const [doctors, setDoctors]           = useState<AdminDoctor[]>([]);
     const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
-    const [specialties, setSpecialties]   = useState<DoctorSpecialty[]>([]);
     const [patients, setPatients]         = useState<PatientInfo[]>([]);
     const [loading, setLoading]           = useState(true);
     const [error, setError]               = useState<string | null>(null);
@@ -25,17 +23,15 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         setLoading(true);
         setError(null);
         try {
-            const [usersData, doctorsData, appointmentsData, specialtiesData, patientsData] = await Promise.all([
+            const [usersData, doctorsData, appointmentsData, patientsData] = await Promise.all([
                 adminApiRef.current.fetchAllUsers(),
                 adminApiRef.current.fetchAllDoctors(),
                 adminApiRef.current.fetchAllAppointments(),
-                adminApiRef.current.fetchAllSpecialties(),
                 adminApiRef.current.fetchAllPatients(),
             ]);
             setUsers(usersData);
             setDoctors(doctorsData);
             setAppointments(appointmentsData);
-            setSpecialties(specialtiesData);
             setPatients(patientsData);
         } catch (err: unknown) {
             const e = err as { message?: string };
@@ -59,7 +55,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <AdminContext.Provider value={{
-            users, doctors, appointments, specialties, patients,
+            users, doctors, appointments, patients,
             loading, error,
             deleteAppointment, createDoctor,
             refresh: load,

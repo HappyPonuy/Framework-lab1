@@ -1,10 +1,9 @@
 import type { AxiosInstance } from 'axios';
 import type { AdminUser, CreateDoctorDto } from '../types/admin.types.ts';
-import type { DoctorSpecialty } from '@shared/types/data/doctorinfo.ts';
 import type { UsersDoctorsGetResponseDto } from '@contracts/users/doctors/get.ts';
 import type { AppointmentsGetResponseDto } from '@contracts/appointments/get.ts';
 import type { AppointmentsCancelResponseDto } from '@contracts/appointments/cancel.ts';
-import type { PatientInfo } from '@shared/types/data/patientinfo.js';
+import type { PatientInfo } from '@shared/types/data/patientinfo.d.js';
 
 
 const MOCK_USERS: AdminUser[] = [
@@ -32,12 +31,6 @@ const MOCK_ADMIN_APPOINTMENTS: AppointmentsGetResponseDto = [
     { id: 'a-004', patient_id: 'p-004', doctor_id: 'd-004', progress: 'Назначен', start_time: new Date('2026-03-05T09:30:00Z'), patient_notes: null, doctor_notes: null,                    created_at: new Date('2026-03-01T00:00:00Z'), updated_at: new Date('2026-03-01T00:00:00Z') },
 ];
 
-const MOCK_SPECIALTIES: DoctorSpecialty[] = [
-    { id: 1, specialtyName: 'Терапевт'    },
-    { id: 2, specialtyName: 'Кардиолог'   },
-    { id: 3, specialtyName: 'Невролог'    },
-    { id: 4, specialtyName: 'Офтальмолог' },
-];
 
 const MOCK_PATIENTS_LIST: PatientInfo[] = [
     { id: 'p-001', user_id: 'u-001', email: 'petrov@mail.ru', phone: '123', first_name: 'Алексей', last_name: 'Петров', patronymic: 'Иванович', birth_date: new Date(), gender: 'M', created_at: new Date(), updated_at: new Date() },
@@ -66,10 +59,6 @@ export function createAdminApi(_axios: AxiosInstance) {
             return Promise.resolve(MOCK_ADMIN_APPOINTMENTS);
         },
 
-        async fetchAllSpecialties(): Promise<DoctorSpecialty[]> {
-             // No endpoint for specialties yet
-            return Promise.resolve(MOCK_SPECIALTIES);
-        },
 
         async fetchAllPatients(): Promise<PatientInfo[]> {
             return Promise.resolve(MOCK_PATIENTS_LIST);
@@ -92,5 +81,3 @@ export function createAdminApi(_axios: AxiosInstance) {
         },
     };
 }
-
-

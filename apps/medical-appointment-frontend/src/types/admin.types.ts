@@ -1,7 +1,6 @@
 import type { UsersDoctorsGetResponseDto } from '@contracts/users/doctors/get.ts';
 import type { AppointmentsGetResponseDto } from '@contracts/appointments/get.ts';
-import type { DoctorSpecialty } from '@shared/types/data/doctorinfo.ts';
-import type { PatientInfo } from '@shared/types/data/patientinfo.ts';
+import type { PatientInfo } from '@shared/types/data/patientinfo.d.ts';
 
 export interface AdminUser {
     id: string;
@@ -32,7 +31,6 @@ export interface AdminContextType {
     users: AdminUser[];
     doctors: AdminDoctor[];
     appointments: AdminAppointment[];
-    specialties: DoctorSpecialty[];
     patients: PatientInfo[];
     loading: boolean;
     error: string | null;
