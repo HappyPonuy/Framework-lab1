@@ -31,7 +31,7 @@ export default class UsersController {
 
     async patientsInfo(req: Request, res: Response, next: NextFunction) {
         try {
-            const params = req.params as UsersPatientsInfoRequestDto;
+            const params = req.parsedQuery as UsersPatientsInfoRequestDto;
             const patientInfo = await this.service.getPatientInfo(params.id);
             if (!patientInfo) return next(new PatientInfoNotFoundError());
             res.status(200).json(patientInfo);
@@ -42,7 +42,7 @@ export default class UsersController {
 
     async doctorsInfo(req: Request, res: Response, next: NextFunction) {
         try {
-            const params = req.params as UsersDoctorsInfoRequestDto;
+            const params = req.parsedQuery as UsersDoctorsInfoRequestDto;
             const doctorInfo = await this.service.getDoctorInfo(params.id);
             if (!doctorInfo) return next(new DoctorInfoNotFoundError());
             res.status(200).json(doctorInfo);
