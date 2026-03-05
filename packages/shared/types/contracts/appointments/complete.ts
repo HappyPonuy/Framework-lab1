@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { AppointmentInfo } from "@shared/types/data/appointmentinfo.js";
 
 export const AppointmentsCompleteRequestSchema = z.object({
     appointment_id: z.uuid({ message: 'Некорректный идентификатор записи' }),
@@ -7,4 +8,4 @@ export const AppointmentsCompleteRequestSchema = z.object({
 
 export type AppointmentsCompleteRequestDto = z.infer<typeof AppointmentsCompleteRequestSchema>;
 
-export type AppointmentsCompleteResponseDto = void;
+export type AppointmentsCompleteResponseDto = AppointmentInfo;
