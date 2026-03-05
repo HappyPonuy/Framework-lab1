@@ -11,9 +11,17 @@ import { UnauthorizedError } from "@errors/unauthorized";
 
 export const validateBody = (schema: ZodType) => (req: Request, res: Response, next: NextFunction) => {
     const parsed = schema.safeParse(req.body);
-    if (!parsed.success) next(new SchemaMismatchError());
+    if (!parsed.success) return next(new SchemaMismatchError());
 
     req.body = parsed.data;
+    next();
+};
+
+export const validateParams = (schema: ZodType) => (req: Request, res: Response, next: NextFunction) => {
+    const parsed = schema.safeParse(req.params);
+    if (!parsed.success) return next(new SchemaMismatchError());
+
+    req.params = parsed.data as Record<string, string>;
     next();
 };
 
