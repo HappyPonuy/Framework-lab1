@@ -9,7 +9,7 @@ export default class UsersRepository {
     async getAllPatients(): Promise<PatientInfo[]> {
         try {
             const patientsQueryResult = await this.db.query(
-                "SELECT * FROM users"
+                "SELECT * FROM patients"
             );
             return patientsQueryResult.rows as PatientInfo[];
         } catch (err) {
@@ -37,7 +37,7 @@ export default class UsersRepository {
     async getPatientById(patientId: string): Promise<PatientInfo | null> {
         try {
             const patientQueryResult = await this.db.query(
-                "SELECT * FROM users WHERE id = $1",
+                "SELECT * FROM patients WHERE id = $1 OR user_id = $1",
                 [patientId]
             );
             return patientQueryResult.rows[0] as PatientInfo;
@@ -52,7 +52,7 @@ export default class UsersRepository {
     async getDoctorById(doctorId: string): Promise<DoctorInfo | null> {
         try {
             const doctorQueryResult = await this.db.query(
-                "SELECT * FROM doctors WHERE id = $1",
+                "SELECT * FROM doctors WHERE id = $1 OR user_id = $1",
                 [doctorId]
             );
             return doctorQueryResult.rows[0] as DoctorInfo;
