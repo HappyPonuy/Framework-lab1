@@ -85,9 +85,9 @@ export default class AppointmentsRepository {
                     UPDATE appointments
                     SET doctor_notes = $1, updated_at = NOW()
                     WHERE id = $2
-                    RETURNING id
+                    RETURNING *
                 )
-                SELECT * FROM appointments a WHERE a.id = updated_appointment.id`,
+                SELECT * FROM updated_appointment`,
                 [doctorNotes, appointmentId]
             );
             return updateDoctorNotesQueryResult.rows[0] as AppointmentInfo;
