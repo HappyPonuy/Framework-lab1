@@ -10,13 +10,19 @@ export class HTTPClient {
         this.defaultHeaders = headers;
     }
 
+    private async parseResponse(response: Response) {
+        const contentType = response.headers.get("Content-Type");
+        if (contentType?.includes("application/json")) return response.json();
+        return {};
+    }
+
     async get(path: string, options?: RequestInit) {
         const response = await fetch(`${this.baseURL}${path}`, {
             method: "GET",
             headers: this.defaultHeaders,
             ...options,
         });
-        return response.json();
+        return this.parseResponse(response);
     }
 
     async post(path: string, body: any, options?: RequestInit) {
@@ -26,6 +32,6 @@ export class HTTPClient {
             body: JSON.stringify(body),
             ...options,
         });
-        return response.json();
+        return this.parseResponse(response);
     }
 }
