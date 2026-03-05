@@ -26,11 +26,7 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
             ]);
             setPatient(profileData);
             setDoctors(doctorsData);
-            setAppointments(prev => {
-                const existingIds = new Set(prev.map(a => a.id));
-                const fresh = appointmentsData.filter(a => !existingIds.has(a.id));
-                return prev.length === 0 ? appointmentsData : [...prev, ...fresh];
-            });
+            setAppointments(appointmentsData);
         } catch (err: unknown) {
             const e = err as { message?: string };
             setError(e.message ?? 'Ошибка загрузки данных');
@@ -50,7 +46,9 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
 
     const cancelAppointment = async (appointmentId: string) => {
         await patientApi.cancelAppointment({ appointment_id: appointmentId });
-        setAppointments(prev => prev.filter(a => a.id !== appointmentId));
+        setAppointments(prev => prev.map(a =>
+            a.id === appointmentId ? { ...a, progress: 'Отменен' } : a
+        ));
     };
 
     const updateProfile = async (dto: UpdatePatientDto) => {
