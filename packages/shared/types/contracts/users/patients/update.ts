@@ -7,7 +7,7 @@ export const UsersPatientsUpdateRequestSchema = z.object({
     first_name: z.string().min(1, { message: 'Имя обязательно' }),
     last_name: z.string().min(1, { message: 'Фамилия обязательна' }),
     patronymic: z.string().nullable(),
-    birth_date: z.date({ message: 'Некорректная дата рождения' }),
+    birth_date: z.coerce.date({ message: 'Некорректная дата рождения' }),
     gender: z.enum(['M', 'F']),
 });
 

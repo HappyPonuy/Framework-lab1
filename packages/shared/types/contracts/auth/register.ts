@@ -9,7 +9,7 @@ export const RegisterRequestSchema = z.object({
     patronymic: z.string().nullable().optional(),
     email: z.string().email({ message: 'Некорректный email' }),
     phone: z.string().nullable().optional(),
-    birth_date: z.string().min(1, { message: 'Дата рождения обязательна' }),
+    birth_date: z.coerce.date({ message: 'Дата рождения обязательна' }),
     gender: z.enum(['M', 'F'], { message: 'Укажите пол' }),
 });
 
