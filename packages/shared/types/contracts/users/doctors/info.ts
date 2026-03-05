@@ -1,14 +1,10 @@
-export type UsersDoctorsInfoResponseDto = {
-    id: string;
-    user_id: string;
-    specialty: string;
-    first_name: string;
-    last_name: string;
-    patronymic: string | null;
-    notes: string | null;
-    is_active: boolean;
-    work_days: number;
-    shift_start: string;
-    shift_end: string;
-    slot_minutes: number;
-};
+import { z } from "zod";
+import type { DoctorInfo } from "@shared/types/data/doctorinfo.js";
+
+export const UsersDoctorsInfoRequestSchema = z.object({
+    id: z.string(),
+});
+
+export type UsersDoctorsInfoRequestDto = z.infer<typeof UsersDoctorsInfoRequestSchema>;
+
+export type UsersDoctorsInfoResponseDto = DoctorInfo;
