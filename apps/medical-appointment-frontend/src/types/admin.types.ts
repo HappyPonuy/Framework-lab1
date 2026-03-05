@@ -1,6 +1,7 @@
-import type { UsersDoctorDto } from '@contracts/users/doctors/get.ts';
-import type { AppointmentDto } from '@contracts/appointments/get.ts';
-import type { DoctorSpecialty } from './patient.types.ts';
+import type { UsersDoctorsGetResponseDto } from '@contracts/users/doctors/get.ts';
+import type { AppointmentsGetResponseDto } from '@contracts/appointments/get.ts';
+import type { DoctorSpecialty } from '@shared/types/data/doctorinfo.ts';
+import type { PatientInfo } from '@shared/types/data/patientinfo.ts';
 
 export interface AdminUser {
     id: string;
@@ -11,8 +12,8 @@ export interface AdminUser {
     patronymic: string | null;
 }
 
-export type AdminDoctor = UsersDoctorDto;
-export type AdminAppointment = AppointmentDto;
+export type AdminDoctor = UsersDoctorsGetResponseDto[number];
+export type AdminAppointment = AppointmentsGetResponseDto[number];
 
 export interface CreateDoctorDto {
     user_id: string;
@@ -32,6 +33,7 @@ export interface AdminContextType {
     doctors: AdminDoctor[];
     appointments: AdminAppointment[];
     specialties: DoctorSpecialty[];
+    patients: PatientInfo[];
     loading: boolean;
     error: string | null;
     deleteAppointment: (appointmentId: string) => Promise<void>;
