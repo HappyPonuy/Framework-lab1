@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import type { AdminUser, AdminDoctor, AdminAppointment, AdminContextType, CreateDoctorDto } from '../types/admin.types.ts';
-import type { PatientInfo } from '@shared/types/data/patientinfo.d.ts';
+import type { AdminDoctor, AdminAppointment, AdminPatient, AdminContextType } from '../types/admin.types.ts';
 import { createAdminApi } from '../api/adminApi.ts';
 import { useApi } from '../hooks/useApi.ts';
 
@@ -12,10 +11,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const adminApiRef = useRef(adminApi);
     adminApiRef.current = adminApi;
 
-    const [users, setUsers]               = useState<AdminUser[]>([]);
     const [doctors, setDoctors]           = useState<AdminDoctor[]>([]);
     const [appointments, setAppointments] = useState<AdminAppointment[]>([]);
-    const [patients, setPatients]         = useState<PatientInfo[]>([]);
+    const [patients, setPatients]         = useState<AdminPatient[]>([]);
     const [loading, setLoading]           = useState(true);
     const [error, setError]               = useState<string | null>(null);
 
@@ -23,16 +21,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         setLoading(true);
         setError(null);
         try {
-            const [usersData, doctorsData, appointmentsData, patientsData] = await Promise.all([
-                adminApiRef.current.fetchAllUsers(),
+            const [doctorsData, appointmentsData, patientsData] = await Promise.all([
                 adminApiRef.current.fetchAllDoctors(),
                 adminApiRef.current.fetchAllAppointments(),
                 adminApiRef.current.fetchAllPatients(),
             ]);
-            setUsers(usersData);
-            setDoctors(doctorsData);
-            setAppointments(appointmentsData);
-            setPatients(patientsData);
+            setDoctors(Array.isArray(doctorsData) ? doctorsData : []);
+            setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
+            setPatients(Array.isArray(patientsData) ? patientsData : []);
         } catch (err: unknown) {
             const e = err as { message?: string };
             setError(e.message ?? 'Ошибка загрузки данных');
@@ -44,20 +40,17 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => { load(); }, [load]);
 
     const deleteAppointment = useCallback(async (appointmentId: string) => {
-        await adminApiRef.current.deleteAppointment(appointmentId);
-        setAppointments(prev => prev.filter(a => a.id !== appointmentId));
-    }, []);
-
-    const createDoctor = useCallback(async (dto: CreateDoctorDto) => {
-        const newDoctor = await adminApiRef.current.createDoctor(dto);
-        setDoctors(prev => [...prev, newDoctor]);
+        const result = await adminApiRef.current.deleteAppointment(appointmentId);
+        if (result) {
+            setAppointments(prev => prev.filter(a => a.id !== appointmentId));
+        }
     }, []);
 
     return (
         <AdminContext.Provider value={{
-            users, doctors, appointments, patients,
+            doctors, appointments, patients,
             loading, error,
-            deleteAppointment, createDoctor,
+            deleteAppointment,
             refresh: load,
         }}>
             {children}
