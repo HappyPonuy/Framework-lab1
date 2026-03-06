@@ -16,6 +16,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@contracts': path.resolve(__dirname, '../../packages/shared/types/contracts'),
+      '@shared': path.resolve(__dirname, '../../packages/shared'),
     },
   },
 })
