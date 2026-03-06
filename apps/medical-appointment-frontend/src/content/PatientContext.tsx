@@ -18,11 +18,12 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
     const [error, setError]               = useState<string | null>(null);
 
     const load = useCallback(async () => {
+        if (!user) return;
         setLoading(true);
         setError(null);
         try {
             const [profileData, doctorsData, appointmentsData] = await Promise.all([
-                patientApi.fetchProfile(user!.id),
+                patientApi.fetchProfile(user.id),
                 patientApi.fetchDoctors(),
                 patientApi.fetchAppointments(),
             ]);
@@ -37,7 +38,7 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
         }
     }, [patientApi, user]);
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => { if (user) load(); }, [load, user]);
 
     const bookAppointment = useCallback(async (dto: CreateAppointmentDto) => {
         const newAppointment = await patientApi.createAppointment(dto);

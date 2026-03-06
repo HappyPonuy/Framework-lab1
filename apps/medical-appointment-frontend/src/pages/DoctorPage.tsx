@@ -9,9 +9,9 @@ import { useToast } from '../hooks/useToast.ts'
 import { MedLogo } from '../components/MedLogo.tsx'
 import { UserAvatar } from '../components/UserAvatar.tsx'
 
-const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+const DAY_BITS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 function formatWorkDays(mask: number): string {
-    return DAY_NAMES.filter((_, i) => mask & (1 << i)).join(', ')
+    return DAY_BITS.filter((_, i) => mask & (1 << i)).join(', ')
 }
 function formatTime(date: Date | string): string {
     return new Date(date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
@@ -48,6 +48,7 @@ function DoctorPageContent() {
         setSavingNotes(true)
         const result = await withErrorToast(() =>
             updateNotes({ appointment_id: selectedAppointment.id, doctor_notes: notes })
+                .then(() => true)
         )
         setSavingNotes(false)
         if (result !== undefined) {

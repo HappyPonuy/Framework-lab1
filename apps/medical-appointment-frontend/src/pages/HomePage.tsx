@@ -109,6 +109,7 @@ function HomePageContent() {
             const birthDate = new Date(editForm.birth_date)
             if (isNaN(birthDate.getTime())) throw new Error('Некорректная дата рождения')
             await updateProfile({ ...editForm, birth_date: birthDate })
+            return true
         })
         setSaving(false)
         if (result !== undefined) {

@@ -22,11 +22,12 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
     const [error, setError]               = useState<string | null>(null);
 
     const load = useCallback(async () => {
+        if (!user) return;
         setLoading(true);
         setError(null);
         try {
             const [profileData, appointmentsData, patientsData] = await Promise.all([
-                doctorApiRef.current.fetchProfile(user!.id),
+                doctorApiRef.current.fetchProfile(user.id),
                 doctorApiRef.current.fetchAppointments(),
                 doctorApiRef.current.fetchPatients(),
             ]);
@@ -50,7 +51,7 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
         }
     }, [user]);
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => { if (user) load(); }, [load, user]);
 
     const todayAppointments = appointments.filter(a => {
         const d = new Date(a.start_time);
