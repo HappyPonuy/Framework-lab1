@@ -40,7 +40,7 @@ function AuthPage() {
     const [loginValues, setLoginValues] = useState<LoginFormValues>(INITIAL_LOGIN)
     const [regValues, setRegValues] = useState<RegisterFormValues>(INITIAL_REGISTER)
     const [birthDateStr, setBirthDateStr] = useState<string>('')
-    const { login, register, loading: isLoading, error, clearError } = useAuth();
+    const { login, register, loading: isLoading, error, successMessage, clearError } = useAuth();
 
     const handleLoginChange = (e: ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target
@@ -153,6 +153,15 @@ function AuthPage() {
                                     </div>
                                 </div>
                             </>
+                        )}
+
+                        {successMessage && (
+                            <div className="flex items-center gap-2 rounded-xl bg-green-100 border border-green-400 px-3.5 py-2.5 text-sm font-medium text-green-700">
+                                <svg className="h-4 w-4 shrink-0 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                </svg>
+                                {successMessage}
+                            </div>
                         )}
 
                         {error && (

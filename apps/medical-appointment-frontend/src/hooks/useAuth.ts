@@ -8,6 +8,7 @@ export function useAuth() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const login = async (username: string, password: string) => {
         setLoading(true);
@@ -30,10 +31,12 @@ export function useAuth() {
     const register = async (data: RegisterFormValues) => {
         setLoading(true);
         setError(null);
+        setSuccessMessage(null);
         try {
             const result = await ctxRegister(data);
             if (result.success) {
-                navigate('/');
+                setSuccessMessage('Регистрация прошла успешно! Войдите в систему.');
+                navigate('/auth');
             } else {
                 setError(typeof result.data === 'string' ? result.data : 'Ошибка регистрации');
             }
@@ -49,7 +52,7 @@ export function useAuth() {
         await ctxLogout();
     };
 
-    const clearError = () => setError(null);
+    const clearError = () => { setError(null); setSuccessMessage(null); };
 
-    return { loading, error, login, logout, register, clearError };
+    return { loading, error, successMessage, login, logout, register, clearError };
 }

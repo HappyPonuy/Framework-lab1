@@ -149,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setError(msg);
                 return { success: false, data: msg };
             }
-            return await login(values.username, values.password);
+            return { success: true, data: null as unknown as User };
         } catch (err: unknown) {
             const axiosErr = err as { response?: { data?: { error?: string } } };
             const errmsg = axiosErr.response?.data?.error ?? String(err);
