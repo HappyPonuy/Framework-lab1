@@ -12,6 +12,7 @@ apps/*/dist
 apps/*/out
 apps/medical-appointment-frontend/.vite
 
+.env
 apps/*/.env
 apps/*/*.env
 apps/*/*.env.development

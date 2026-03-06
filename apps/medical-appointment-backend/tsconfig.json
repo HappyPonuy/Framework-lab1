@@ -2,18 +2,20 @@
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     "rootDir": "../../",
+    "baseUrl": ".",
     "outDir": "./dist",
     "paths": {
         "@shared/*": ["../../packages/shared/*"],
         "@contracts/*": ["../../packages/shared/types/contracts/*"],
-        "@custom_types/*": ["./src/types/*.d.ts"],
-        "@config/*": ["./src/config/*.ts"],
-        "@modules/*": ["./src/modules/*/index.ts"],
-        "@errors/*": ["./src/errors/*.ts"],
+        "@custom_types/*": ["./src/types/*"],
+        "@config/*": ["./src/config/*"],
+        "@modules/*": ["./src/modules/*"],
+        "@errors/*": ["./src/errors/*"],
     },
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "nodenext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "target": "ES2022",
     "types": ["node"],
     // For nodejs:
@@ -47,5 +49,9 @@
     "skipLibCheck": true,
     "esModuleInterop": true
   },
-  "include": ["src", "environment.d.ts", "../../packages/shared"]
+  "include": ["src", "environment.d.ts", "../../packages/shared"],
+  "tsc-alias": {
+    "resolveFullPaths": true,
+    "verbose": false
+  }
 }
