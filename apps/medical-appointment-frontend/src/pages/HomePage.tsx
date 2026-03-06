@@ -70,6 +70,7 @@ function HomePageContent() {
                 patient_notes: patientNotes.trim() || null,
             }
             await bookAppointment(dto)
+            return true
         })
         setBooking(false)
         if (result !== undefined) {
