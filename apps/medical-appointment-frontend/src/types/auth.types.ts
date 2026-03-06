@@ -1,12 +1,9 @@
 import type { RegisterRequestDto } from '@contracts/auth/register.ts';
 
-// Форма входа
 type LoginFormValues = {
     username: string;
     password: string;
 }
-
-// Форма регистрации = RegisterRequestDto + confirmPassword для UI
 type RegisterFormValues = RegisterRequestDto & {
     confirmPassword: string;
 }
@@ -15,13 +12,6 @@ interface User {
     id: string;
     username: string;
     role: 'P' | 'D' | 'A';
-}
-
-interface AuthContentType {
-    user: User | null;
-    setUser: (user: User | null) => void;
-    isAuthenticated: boolean;
-    loading: boolean;
 }
 
 interface AuthContextFullType {
@@ -42,17 +32,10 @@ interface LoginResult {
     data: User | string;
 }
 
-interface ApiInstance {
-    get: (url: string, config?: object) => Promise<unknown>;
-    post: (url: string, data?: unknown, config?: object) => Promise<unknown>;
-}
-
 export type {
     LoginFormValues,
     RegisterFormValues,
     User,
-    AuthContentType,
     AuthContextFullType,
     LoginResult,
-    ApiInstance,
 }

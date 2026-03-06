@@ -2,11 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { RegisterFormValues } from '../types/auth.types.ts';
 import { useAuth as useAuthContext } from '../content/AuthContext.tsx';
-import { RegisterRequestSchema, RegisterResult } from '@contracts/auth/register.ts';
-import { authApi } from '../api/authApi.ts';
 
 export function useAuth() {
-    const { login: ctxLogin, logout: ctxLogout } = useAuthContext();
+    const { login: ctxLogin, logout: ctxLogout, register: ctxRegister } = useAuthContext();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -30,41 +28,14 @@ export function useAuth() {
     };
 
     const register = async (data: RegisterFormValues) => {
-        if (data.password !== data.confirmPassword) {
-            setError('Пароли не совпадают');
-            return;
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { confirmPassword: _, ...dto } = data;
-
-        const parsed = RegisterRequestSchema.safeParse({ ...dto, role: 'P' });
-        if (!parsed.success) {
-            setError(parsed.error.issues.map((e: { message: string }) => e.message).join(', '));
-            return;
-        }
-
         setLoading(true);
         setError(null);
         try {
-            const response = await authApi.register(parsed.data);
-            const registerData = response.data;
-
-            if (registerData.result === RegisterResult.Duplicate) {
-                setError('Пользователь с таким именем уже существует');
-                return;
-            }
-            if (registerData.result === RegisterResult.Error || !registerData.user_id) {
-                setError('Ошибка регистрации на сервере');
-                return;
-            }
-
-            // После успешной регистрации — сразу войти
-            const result = await ctxLogin(parsed.data.username, parsed.data.password);
+            const result = await ctxRegister(data);
             if (result.success) {
                 navigate('/');
             } else {
-                setError(typeof result.data === 'string' ? result.data : 'Ошибка после регистрации');
+                setError(typeof result.data === 'string' ? result.data : 'Ошибка регистрации');
             }
         } catch (err: unknown) {
             const axiosErr = err as { response?: { data?: { error?: string; message?: string } } };

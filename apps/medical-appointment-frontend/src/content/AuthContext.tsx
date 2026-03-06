@@ -1,5 +1,6 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
 import { http } from '../api/http.ts';
 import { authApi } from '../api/authApi.ts';
 import type { User, AuthContextFullType, LoginResult, RegisterFormValues } from '../types/auth.types.ts';
@@ -7,35 +8,91 @@ import { LoginRequestSchema } from '@contracts/auth/login.ts';
 import { LogoutRequestSchema } from '@contracts/auth/logout.ts';
 import { RefreshRequestSchema } from '@contracts/auth/refresh.ts';
 import { RegisterRequestSchema, RegisterResult } from '@contracts/auth/register.ts';
+import type { RefreshResponseDto } from '@contracts/auth/refresh.ts';
 
 const AuthContext = createContext<AuthContextFullType | null>(null);
 
+function parseUserFromToken(token: string): User | null {
+    try {
+        const payloadB64 = token.split('.')[1];
+        if (!payloadB64) return null;
+        const json = JSON.parse(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/')));
+        if (!json.user_id || !json.user_name || !json.user_role) return null;
+        return { id: json.user_id, username: json.user_name, role: json.user_role };
+    } catch {
+        return null;
+    }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
-    const [token, setTokenState] = useState<string>(localStorage.getItem('token') ?? '');
+    const [token, setTokenState] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
     const location = useLocation();
-    const PUBLIC_PATHS = ['/', '/patient', '/doctor', '/admin'];
+    const PUBLIC_PATHS = ['/auth'];
 
     const setToken = (newToken: string) => {
         setTokenState(newToken);
         if (newToken) {
-            localStorage.setItem('token', newToken);
+            http.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+            setUser(parseUserFromToken(newToken));
         } else {
-            localStorage.removeItem('token');
+            delete http.defaults.headers.common['Authorization'];
+            setUser(null);
         }
     };
 
     const clearError = () => setError(null);
 
-    const getUserInfo = async (currentToken: string): Promise<void> => {
-        const res = await http.get<{ user: User }>('/auth/userinfo', {
-            headers: { Authorization: `Bearer ${currentToken}` },
-        });
-        setUser(res.data.user);
-    };
+    const setTokenRef = useRef(setToken);
+    setTokenRef.current = setToken;
+    const logoutRef = useRef<() => Promise<void>>(async () => { /* placeholder */ });
+
+    useEffect(() => {
+        const resInt = http.interceptors.response.use(
+            (response: AxiosResponse) => response,
+            async (error: unknown) => {
+                const axiosErr = error as {
+                    config: InternalAxiosRequestConfig & { _retry?: boolean };
+                    response?: { status?: number };
+                };
+                const originalReq = axiosErr.config;
+
+                if (axiosErr.response?.status === 401 && !originalReq._retry) {
+                    originalReq._retry = true;
+
+                    const storedRefresh = localStorage.getItem('refresh_token') ?? '';
+                    const parsed = RefreshRequestSchema.safeParse({ token: storedRefresh });
+
+                    if (!parsed.success) {
+                        await logoutRef.current();
+                        return Promise.reject(error);
+                    }
+
+                    try {
+                        const res = await authApi.refresh(parsed.data);
+                        const newAccessToken = (res.data as RefreshResponseDto).access_token;
+                        setTokenRef.current(newAccessToken);
+                        originalReq.headers['Authorization'] = `Bearer ${newAccessToken}`;
+                        return await http(originalReq);
+                    } catch (refreshError: unknown) {
+                        const refreshAxiosErr = refreshError as { response?: { status?: number } };
+                        if (refreshAxiosErr.response?.status === 401) {
+                            localStorage.removeItem('refresh_token');
+                            await logoutRef.current();
+                        }
+                        return Promise.reject(error);
+                    }
+                }
+
+                return Promise.reject(error);
+            },
+        );
+        return () => { http.interceptors.response.eject(resInt); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const login = async (username: string, password: string): Promise<LoginResult> => {
         setError(null);
@@ -53,8 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setToken(access_token);
             localStorage.setItem('refresh_token', refresh_token);
 
-            await getUserInfo(access_token);
-            return { success: true, data: user! };
+            return { success: true, data: res.data as unknown as User };
         } catch (err: unknown) {
             const axiosErr = err as { response?: { data?: { error?: string } } };
             const errmsg = axiosErr.response?.data?.error ?? String(err);
@@ -93,7 +149,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setError(msg);
                 return { success: false, data: msg };
             }
-            // После успешной регистрации — сразу войти
             return await login(values.username, values.password);
         } catch (err: unknown) {
             const axiosErr = err as { response?: { data?: { error?: string } } };
@@ -105,7 +160,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = async (): Promise<void> => {
         const refreshToken = localStorage.getItem('refresh_token') ?? '';
-
         const parsed = LogoutRequestSchema.safeParse({ token: refreshToken });
 
         try {
@@ -117,18 +171,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setToken('');
             localStorage.removeItem('refresh_token');
-            setUser(null);
             navigate('/auth');
         }
     };
+    logoutRef.current = logout;
 
     const refreshToken = async (): Promise<void> => {
         const storedRefresh = localStorage.getItem('refresh_token') ?? '';
-
         const parsed = RefreshRequestSchema.safeParse({ token: storedRefresh });
+
         if (!parsed.success) {
             setToken('');
-            setUser(null);
             navigate('/auth');
             return;
         }
@@ -141,14 +194,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (axiosErr.response?.status === 401) {
                 setToken('');
                 localStorage.removeItem('refresh_token');
-                setUser(null);
                 navigate('/auth');
             }
         }
     };
 
     useEffect(() => {
-        if (!token) {
+        const storedRefresh = localStorage.getItem('refresh_token');
+        if (!storedRefresh) {
             setLoading(false);
             if (!PUBLIC_PATHS.includes(location.pathname)) {
                 navigate('/auth');
@@ -157,24 +210,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         setLoading(true);
-        getUserInfo(token)
-            .then(() => setLoading(false))
-            .catch(async (err: unknown) => {
-                const axiosErr = err as { response?: { status?: number } };
-                if (axiosErr.response?.status === 401) {
-                    try {
-                        await refreshToken();
-                        setLoading(false);
-                    } catch {
-                        setToken('');
-                        setUser(null);
-                        setLoading(false);
-                        navigate('/auth');
-                    }
-                } else {
-                    setLoading(false);
-                }
-            });
+        refreshToken()
+            .catch(() => {
+                setToken('');
+                navigate('/auth');
+            })
+            .finally(() => setLoading(false));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
