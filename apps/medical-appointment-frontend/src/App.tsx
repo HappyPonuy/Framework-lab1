@@ -14,21 +14,22 @@ function RoleRouter() {
     if (user?.role === 'A') return <AdminPage />
     if (user?.role === 'D') return <DoctorPage />
     if (user?.role === 'P') return <HomePage />
-    return <AuthPage />
+    return <Navigate to="/auth" replace />
+}
+
+function AuthRoute() {
+    const { token, loading } = useAuth();
+    if (loading) return null;
+    if (token) return <Navigate to="/" replace />;
+    return <AuthPage />;
 }
 
 function App() {
-
     return (
         <BrowserRouter>
             <AuthProvider>
                 <Routes>
-                    <Route path="/auth" element={<AuthPage />} />
-
-                    {/* TODO: убрать при подключении бека */}
-                    <Route path="/patient" element={<HomePage />} />
-                    <Route path="/doctor"  element={<DoctorPage />} />
-                    <Route path="/admin"   element={<AdminPage />} />
+                    <Route path="/auth" element={<AuthRoute />} />
 
                     <Route element={<ProtectedRoute />}>
                         <Route path="/" element={<RoleRouter />} />
@@ -38,7 +39,7 @@ function App() {
                 </Routes>
             </AuthProvider>
         </BrowserRouter>
-  )
+    )
 }
 
 export default App

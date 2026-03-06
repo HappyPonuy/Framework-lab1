@@ -9,7 +9,8 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@contracts/*": ["../../packages/shared/types/contracts/*"]
+      "@contracts/*": ["../../packages/shared/types/contracts/*"],
+      "@shared/*": ["../../packages/shared/*"]
     },
 
     /* Bundler mode */
