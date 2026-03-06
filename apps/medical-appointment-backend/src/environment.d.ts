@@ -16,8 +16,11 @@ declare global {
             DB_HOST: string;
             DB_PORT: string;
             AUTH_SERVICE_URL: string;
+            AUTH_SERVICE_DB: string;
             USERS_SERVICE_URL: string;
+            USERS_SERVICE_DB: string;
             APPOINTMENTS_SERVICE_URL: string;
+            APPOINTMENTS_SERVICE_DB: string;
         }
     }
 
