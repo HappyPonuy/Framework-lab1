@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Patient, DoctorInfo, Appointment, CreateAppointmentDto, UpdatePatientDto, PatientContextType } from '../types/patient.types.ts';
 import { createPatientApi } from '../api/patientApi.ts';
 import { useApi } from '../hooks/useApi.ts';
@@ -10,6 +10,10 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
     const { api } = useApi();
     const { user } = useAuth();
     const patientApi = useMemo(() => createPatientApi(api), [api]);
+    const patientApiRef = useRef(patientApi);
+    patientApiRef.current = patientApi;
+    const userRef = useRef(user);
+    userRef.current = user;
 
     const [patient, setPatient]           = useState<Patient | null>(null);
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -18,14 +22,14 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
     const [error, setError]               = useState<string | null>(null);
 
     const load = useCallback(async () => {
-        if (!user) return;
+        if (!userRef.current) { setLoading(false); return; }
         setLoading(true);
         setError(null);
         try {
             const [profileData, doctorsData, appointmentsData] = await Promise.all([
-                patientApi.fetchProfile(user.id),
-                patientApi.fetchDoctors(),
-                patientApi.fetchAppointments(),
+                patientApiRef.current.fetchProfile(userRef.current.id),
+                patientApiRef.current.fetchDoctors(),
+                patientApiRef.current.fetchAppointments(),
             ]);
             setPatient(profileData);
             setDoctors(Array.isArray(doctorsData) ? doctorsData : []);
@@ -36,30 +40,30 @@ export function PatientProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setLoading(false);
         }
-    }, [patientApi, user]);
+    }, []);
 
-    useEffect(() => { if (user) load(); }, [load, user]);
+    useEffect(() => { load(); }, [load]);
 
     const bookAppointment = useCallback(async (dto: CreateAppointmentDto) => {
-        const newAppointment = await patientApi.createAppointment(dto);
+        const newAppointment = await patientApiRef.current.createAppointment(dto);
         setAppointments(prev =>
             prev.find(a => a.id === newAppointment.id) ? prev : [...prev, newAppointment]
         );
-    }, [patientApi]);
+    }, []);
 
     const cancelAppointment = useCallback(async (appointmentId: string) => {
-        const result = await patientApi.cancelAppointment({ appointment_id: appointmentId });
+        const result = await patientApiRef.current.cancelAppointment({ appointment_id: appointmentId });
         if (result) {
             setAppointments(prev => prev.map(a =>
                 a.id === appointmentId ? { ...a, progress: 'Отменен' } : a
             ));
         }
-    }, [patientApi]);
+    }, []);
 
     const updateProfile = useCallback(async (dto: UpdatePatientDto) => {
-        const updated = await patientApi.updateProfile(dto);
+        const updated = await patientApiRef.current.updateProfile(dto);
         setPatient(updated);
-    }, [patientApi]);
+    }, []);
 
     return (
         <PatientContext.Provider value={{

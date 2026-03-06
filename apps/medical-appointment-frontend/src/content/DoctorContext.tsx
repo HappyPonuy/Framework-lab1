@@ -13,6 +13,8 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
     const doctorApi = useMemo(() => createDoctorApi(api), [api]);
     const doctorApiRef = useRef(doctorApi);
     doctorApiRef.current = doctorApi;
+    const userRef = useRef(user);
+    userRef.current = user;
 
     const [doctor, setDoctor]             = useState<DoctorProfile | null>(null);
     const [schedule, setSchedule]         = useState<DoctorSchedule | null>(null);
@@ -22,12 +24,12 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
     const [error, setError]               = useState<string | null>(null);
 
     const load = useCallback(async () => {
-        if (!user) return;
+        if (!userRef.current) { setLoading(false); return; }
         setLoading(true);
         setError(null);
         try {
             const [profileData, appointmentsData, patientsData] = await Promise.all([
-                doctorApiRef.current.fetchProfile(user.id),
+                doctorApiRef.current.fetchProfile(userRef.current.id),
                 doctorApiRef.current.fetchAppointments(),
                 doctorApiRef.current.fetchPatients(),
             ]);
@@ -49,9 +51,9 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, []);
 
-    useEffect(() => { if (user) load(); }, [load, user]);
+    useEffect(() => { load(); }, [load]);
 
     const todayAppointments = appointments.filter(a => {
         const d = new Date(a.start_time);

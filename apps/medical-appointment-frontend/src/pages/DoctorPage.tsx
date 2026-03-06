@@ -262,7 +262,7 @@ function DoctorPageContent() {
                         </div>
                         <div className="space-y-3">
                             {[
-                                { label: 'Рабочие дни',         value: doctor.work_days ? `${doctor.work_days} (${formatWorkDays(doctor.work_days)})` : '—' },
+                                { label: 'Рабочие дни',         value: doctor.work_days ? formatWorkDays(doctor.work_days) : '—' },
                                 { label: 'Смена',               value: (doctor.shift_start && doctor.shift_end) ? `${doctor.shift_start} — ${doctor.shift_end}` : '—' },
                                 { label: 'Длительность приёма', value: doctor.slot_minutes ? `${doctor.slot_minutes} мин.` : '—' },
                                 { label: 'Статус',              value: doctor.is_active ? 'Активен' : 'Неактивен' },
