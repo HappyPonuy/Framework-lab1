@@ -68,17 +68,17 @@ export default class UsersRepository {
     async updatePatient(patientId: string, patientData: VolatilePatientInfo): Promise<PatientInfo | null> {
         try {
             const updatePatientQueryResult = await this.db.query(
-                `UPDATE patients 
-                SET 
-                    email = $1, 
-                    phone = $2, 
-                    first_name = $3,
-                    last_name = $4,
-                    patronymic = $5,
-                    birth_date = $6,
-                    gender = $7,
+                `INSERT INTO patients (user_id, email, phone, first_name, last_name, patronymic, birth_date, gender)
+                VALUES ($8, $1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (user_id) DO UPDATE SET
+                    email = EXCLUDED.email,
+                    phone = EXCLUDED.phone,
+                    first_name = EXCLUDED.first_name,
+                    last_name = EXCLUDED.last_name,
+                    patronymic = EXCLUDED.patronymic,
+                    birth_date = EXCLUDED.birth_date,
+                    gender = EXCLUDED.gender,
                     updated_at = NOW()
-                WHERE user_id = $8
                 RETURNING *`,
                 [
                     patientData.email,

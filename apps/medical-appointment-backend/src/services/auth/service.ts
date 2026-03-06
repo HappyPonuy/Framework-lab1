@@ -3,11 +3,22 @@ import { AuthHandler } from "@modules/auth_handler";
 import { PasswordHandler } from "@modules/password";
 import { RegisterResult } from "@contracts/auth/register.js";
 import type { UserRole } from "@custom_types/userroles";
+import { env } from "@config/env.js";
+
+type PatientProfileData = {
+    email: string;
+    phone?: string | null | undefined;
+    first_name: string;
+    last_name: string;
+    patronymic?: string | null | undefined;
+    birth_date: Date;
+    gender: 'M' | 'F';
+};
 
 export default class AuthService {
     constructor(private repo: AuthRepository) {}
 
-    async register(name: string, pass: string, role: 'P' | 'D' | 'A'): Promise<{
+    async register(name: string, pass: string, role: 'P' | 'D' | 'A', profileData?: PatientProfileData): Promise<{
         result: RegisterResult,
         userId: string | null
     }> {
@@ -17,6 +28,34 @@ export default class AuthService {
         const passHash = PasswordHandler.hash(pass);
         const userId = await this.repo.addUser(name, passHash, role);
         if (!userId) return { result: RegisterResult.Error, userId: null };
+
+        if (role === 'P' && profileData && env.USERS_SERVICE_URL) {
+            try {
+                const accessToken = AuthHandler.generateAccessToken({
+                    user_id: userId,
+                    user_name: name,
+                    user_role: 'P' as UserRole,
+                });
+                await fetch(`${env.USERS_SERVICE_URL}/users/patients/update`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`,
+                    },
+                    body: JSON.stringify({
+                        email: profileData.email,
+                        phone: profileData.phone ?? null,
+                        first_name: profileData.first_name,
+                        last_name: profileData.last_name,
+                        patronymic: profileData.patronymic ?? null,
+                        birth_date: profileData.birth_date,
+                        gender: profileData.gender,
+                    }),
+                });
+            } catch (err) {
+                console.error('Failed to create patient profile in users-service:', err);
+            }
+        }
 
         return { result: RegisterResult.Success, userId };
     }

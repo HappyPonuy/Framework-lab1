@@ -34,7 +34,16 @@ export default class AuthController {
             const { result, userId } = await this.service.register(
                 credentials.username, 
                 credentials.password, 
-                "P" // Эндпоинт для произвольной регистрации пациентов => ставим роль 'P'
+                "P",
+                {
+                    email: credentials.email,
+                    phone: credentials.phone,
+                    first_name: credentials.first_name,
+                    last_name: credentials.last_name,
+                    patronymic: credentials.patronymic,
+                    birth_date: credentials.birth_date,
+                    gender: credentials.gender,
+                }
             );
 
             res.status(200).json({ result, userId });

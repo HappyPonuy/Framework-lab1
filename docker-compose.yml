@@ -47,9 +47,11 @@ services:
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
       AUTH_SERVICE_DB: ${AUTH_SERVICE_DB}
+      USERS_SERVICE_URL: http://users-service:3002
       PORT: 3001
     depends_on:
       - auth-db
+      - users-service
     ports:
       - "3001:3001"
 
