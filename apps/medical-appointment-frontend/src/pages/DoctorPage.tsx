@@ -11,7 +11,7 @@ import { UserAvatar } from '../components/UserAvatar.tsx'
 
 const DAY_BITS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 function formatWorkDays(mask: number): string {
-    return DAY_BITS.filter((_, i) => mask & (1 << i)).join(', ')
+    return DAY_BITS.filter((_, i) => mask & (2 << i)).join(', ')
 }
 function formatTime(date: Date | string): string {
     return new Date(date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
