@@ -2,6 +2,7 @@ import AuthRepository from "./repository.js";
 import { AuthHandler } from "@modules/auth_handler";
 import { PasswordHandler } from "@modules/password";
 import { RegisterResult } from "@contracts/auth/register.js";
+import type { UserRole } from "@custom_types/userroles";
 
 export default class AuthService {
     constructor(private repo: AuthRepository) {}
@@ -42,7 +43,7 @@ export default class AuthService {
         const accessToken = AuthHandler.generateAccessToken({
             user_id: userAuthData.userId,
             user_name: name,
-            user_role: userAuthData.role
+            user_role: userAuthData.role as UserRole
         });
 
         return {
@@ -73,7 +74,7 @@ export default class AuthService {
         const newToken = AuthHandler.generateAccessToken({
             user_id: tokenData.userId,
             user_name: userInfo.name,
-            user_role: userInfo.role
+            user_role: userInfo.role as UserRole
         });
         return newToken;
     }
