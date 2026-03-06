@@ -1,4 +1,5 @@
 import { Database } from "@modules/database";
+import { DatabaseError } from "pg";
 import type { PatientInfo } from "@shared/types/data/patientinfo.js";
 import type { DoctorInfo } from "@shared/types/data/doctorinfo.js";
 import type { VolatilePatientInfo } from "@custom_types/volatilepatientinfo";
@@ -13,7 +14,7 @@ export default class UsersRepository {
             );
             return patientsQueryResult.rows as PatientInfo[];
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return [];
@@ -27,7 +28,7 @@ export default class UsersRepository {
             );
             return doctorsQueryResult.rows as DoctorInfo[];
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return [];
@@ -42,7 +43,7 @@ export default class UsersRepository {
             );
             return patientQueryResult.rows[0] as PatientInfo;
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return null;
@@ -57,7 +58,7 @@ export default class UsersRepository {
             );
             return doctorQueryResult.rows[0] as DoctorInfo;
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return null;
