@@ -3,11 +3,13 @@ import type { DoctorProfile, DoctorSchedule, DoctorAppointment, UpdateDoctorNote
 import type { PatientInfo } from '@shared/types/data/patientinfo.ts';
 import { createDoctorApi } from '../api/doctorApi.ts';
 import { useApi } from '../hooks/useApi.ts';
+import { useAuth } from './AuthContext.tsx';
 
 const DoctorContext = createContext<DoctorContextType | null>(null);
 
 export function DoctorProvider({ children }: { children: React.ReactNode }) {
     const { api } = useApi();
+    const { user } = useAuth();
     const doctorApi = useMemo(() => createDoctorApi(api), [api]);
     const doctorApiRef = useRef(doctorApi);
     doctorApiRef.current = doctorApi;
@@ -24,7 +26,7 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
         setError(null);
         try {
             const [profileData, appointmentsData, patientsData] = await Promise.all([
-                doctorApiRef.current.fetchProfile('current'),
+                doctorApiRef.current.fetchProfile(user!.id),
                 doctorApiRef.current.fetchAppointments(),
                 doctorApiRef.current.fetchPatients(),
             ]);
@@ -38,15 +40,15 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
             };
             setSchedule(scheduleData);
 
-            setAppointments(appointmentsData);
-            setPatients(patientsData);
+            setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
+            setPatients(Array.isArray(patientsData) ? patientsData : []);
         } catch (err: unknown) {
             const e = err as { message?: string };
             setError(e.message ?? 'Ошибка загрузки данных');
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [user]);
 
     useEffect(() => { load(); }, [load]);
 
