@@ -24,10 +24,10 @@ export default class AppointmentsController {
                 const appointments = await this.service.getAllAppointments();
                 res.status(200).json(appointments);
             } else if (userInfo.user_role === "D") {
-                const appointments = await this.service.getAppointmentsByDoctorId(userInfo.user_id);
+                const appointments = await this.service.getAppointmentsByDoctorId(req.get("Authorization")!, userInfo.user_id);
                 res.status(200).json(appointments);
             } else {
-                const appointments = await this.service.getAppointmentsByPatientId(userInfo.user_id);
+                const appointments = await this.service.getAppointmentsByPatientId(req.get("Authorization")!, userInfo.user_id);
                 res.status(200).json(appointments);
             }
         } catch (err) {
