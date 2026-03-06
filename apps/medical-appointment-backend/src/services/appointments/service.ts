@@ -24,11 +24,17 @@ export default class AppointmentsService {
         return this.repo.getAllAppointments();
     }
 
-    async getAppointmentsByPatientId(patientId: string): Promise<AppointmentInfo[]> {
+    async getAppointmentsByPatientId(authHeader: string, patientUserId: string): Promise<AppointmentInfo[]> {
+        const patientId = await getGroupIdForUser("patients", patientUserId, authHeader, this.usersClient);
+        if (!patientId) return [];
+
         return this.repo.getAppointmentsByPatientId(patientId);
     }
 
-    async getAppointmentsByDoctorId(doctorId: string): Promise<AppointmentInfo[]> {
+    async getAppointmentsByDoctorId(authHeader: string, doctorUserId: string): Promise<AppointmentInfo[]> {
+        const doctorId = await getGroupIdForUser("doctors", doctorUserId, authHeader, this.usersClient);
+        if (!doctorId) return [];
+        
         return this.repo.getAppointmentsByDoctorId(doctorId);
     }
 

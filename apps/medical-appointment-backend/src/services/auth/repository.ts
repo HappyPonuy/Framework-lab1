@@ -1,4 +1,5 @@
 import { Database } from "@modules/database";
+import { DatabaseError } from "pg";
 
 export default class AuthRepository {
     constructor(private db: Database) {}
@@ -24,7 +25,7 @@ export default class AuthRepository {
                 revoked: tokenHashQueryResult.rows[0].revoked
             };
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return null;
@@ -40,7 +41,7 @@ export default class AuthRepository {
             );
             return true;
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return false;
@@ -56,7 +57,7 @@ export default class AuthRepository {
             );
             return deleteTokenQueryResult.rowCount !== null && deleteTokenQueryResult.rowCount > 0;
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return false;
@@ -82,7 +83,7 @@ export default class AuthRepository {
                 role: userInfoQueryResult.rows[0].role_id
             };
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return null;
@@ -108,7 +109,7 @@ export default class AuthRepository {
                 role: userInfoQueryResult.rows[0].role_id
             };
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return null;
@@ -125,7 +126,7 @@ export default class AuthRepository {
             );
             return insertUserQueryResult.rows[0]!.id;
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return null;
@@ -141,7 +142,7 @@ export default class AuthRepository {
             );
             return deleteUserQueryResult.rowCount !== null && deleteUserQueryResult.rowCount > 0;
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return false;

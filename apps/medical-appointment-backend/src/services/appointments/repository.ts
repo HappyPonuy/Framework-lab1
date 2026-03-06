@@ -1,4 +1,5 @@
 import { Database } from "@modules/database";
+import { DatabaseError } from "pg";
 import type { AppointmentInfo } from "@shared/types/data/appointmentinfo.js";
 
 export default class AppointmentsRepository {
@@ -11,7 +12,7 @@ export default class AppointmentsRepository {
             );
             return appointmentsQueryResult.rows as AppointmentInfo[];
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return [];
@@ -26,7 +27,7 @@ export default class AppointmentsRepository {
             );
             return appointmentsQueryResult.rows as AppointmentInfo[];
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return [];
@@ -41,7 +42,7 @@ export default class AppointmentsRepository {
             );
             return appointmentsQueryResult.rows as AppointmentInfo[];
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return [];
@@ -71,7 +72,7 @@ export default class AppointmentsRepository {
             );
             return insertAppointmentQueryResult.rows[0] as AppointmentInfo;
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return null;
@@ -92,7 +93,7 @@ export default class AppointmentsRepository {
             );
             return updateDoctorNotesQueryResult.rows[0] as AppointmentInfo;
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return null;
@@ -107,7 +108,7 @@ export default class AppointmentsRepository {
             );
             return true;
         } catch (err) {
-            if (err instanceof Error) {
+            if (err instanceof Error || err instanceof DatabaseError) {
                 console.log(err);
             }
             return false;
