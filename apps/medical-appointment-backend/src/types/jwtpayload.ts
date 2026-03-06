@@ -1,6 +1,6 @@
 import type { UserRole } from "./userroles.js";
 
-type JWTPayload = {
+export type JWTPayload = {
     user_id: string,
     user_name: string,
     user_role: UserRole,
@@ -9,5 +9,3 @@ type JWTPayload = {
     iat: number,
     jti: string
 };
-
-export { JWTPayload };
