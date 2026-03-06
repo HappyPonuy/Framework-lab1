@@ -60,7 +60,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 };
                 const originalReq = axiosErr.config;
 
-                if (axiosErr.response?.status === 401 && !originalReq._retry) {
+                const isRefreshRequest = originalReq.url?.includes('/auth/refresh');
+
+                if (axiosErr.response?.status === 401 && isRefreshRequest) {
+                    localStorage.removeItem('refresh_token');
+                    await logoutRef.current();
+                    return Promise.reject(error);
+                }
+
+                if (axiosErr.response?.status === 401 && !originalReq._retry && !isRefreshRequest) {
                     originalReq._retry = true;
 
                     const storedRefresh = localStorage.getItem('refresh_token') ?? '';
