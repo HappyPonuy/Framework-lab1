@@ -5,7 +5,7 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/auth/login": {
+    "/api/auth/login": {
       "post": {
         "tags": ["Auth"],
         "summary": "Login with username and password",
@@ -30,7 +30,7 @@
         }
       }
     },
-    "/auth/register": {
+    "/api/auth/register": {
       "post": {
         "tags": ["Auth"],
         "summary": "Register a new user",
@@ -54,7 +54,7 @@
         }
       }
     },
-    "/auth/logout": {
+    "/api/auth/logout": {
       "post": {
         "tags": ["Auth"],
         "summary": "Logout and invalidate refresh token",
@@ -72,7 +72,7 @@
         }
       }
     },
-    "/auth/refresh": {
+    "/api/auth/refresh": {
       "post": {
         "tags": ["Auth"],
         "summary": "Refresh access token",

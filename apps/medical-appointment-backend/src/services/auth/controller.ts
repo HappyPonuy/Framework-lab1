@@ -37,10 +37,10 @@ export default class AuthController {
                 "P",
                 {
                     email: credentials.email,
-                    phone: credentials.phone,
+                    phone: credentials.phone || null,
                     first_name: credentials.first_name,
                     last_name: credentials.last_name,
-                    patronymic: credentials.patronymic,
+                    patronymic: credentials.patronymic || null,
                     birth_date: credentials.birth_date,
                     gender: credentials.gender,
                 }

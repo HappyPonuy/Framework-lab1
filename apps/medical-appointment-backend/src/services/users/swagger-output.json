@@ -5,7 +5,7 @@
     "version": "1.0.0"
   },
   "paths": {
-    "/users/doctors": {
+    "/api/users/doctors": {
       "get": {
         "tags": ["Doctors"],
         "summary": "Get all doctors",
@@ -26,7 +26,7 @@
         }
       }
     },
-    "/users/doctors/info": {
+    "/api/users/doctors/info": {
       "get": {
         "tags": ["Doctors"],
         "summary": "Get doctor info by ID",
@@ -53,7 +53,7 @@
         }
       }
     },
-    "/users/patients": {
+    "/api/users/patients": {
       "get": {
         "tags": ["Patients"],
         "summary": "Get all patients",
@@ -74,7 +74,7 @@
         }
       }
     },
-    "/users/patients/info": {
+    "/api/users/patients/info": {
       "get": {
         "tags": ["Patients"],
         "summary": "Get patient info by ID",
@@ -101,7 +101,7 @@
         }
       }
     },
-    "/users/patients/update": {
+    "/api/users/patients/update": {
       "post": {
         "tags": ["Patients"],
         "summary": "Update patient info",
