@@ -52,8 +52,8 @@ function DoctorPageContent() {
         )
         setSavingNotes(false)
         if (result !== undefined) {
-            setSelectedAppointment((prev: DoctorAppointment | null) => prev ? { ...prev, doctor_notes: notes } : null)
             showSuccess('Заметка сохранена')
+            setSelectedAppointment(null)
         }
     }
 

@@ -208,13 +208,6 @@ function AdminPageContent() {
                                             <span className={`text-[10px] px-2 py-0.5 rounded-full border ${progressClass(a.progress)}`}>
                                                 {a.progress}
                                             </span>
-                                            <button
-                                                onClick={() => withErrorToast(() => deleteAppointment(a.id))}
-                                                className="text-xs text-red-400 hover:text-red-600 transition cursor-pointer"
-                                                title="Отменить запись"
-                                            >
-                                                ✕
-                                            </button>
                                         </div>
                                     </div>
                                 )
