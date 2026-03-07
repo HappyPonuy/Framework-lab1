@@ -1,24 +1,16 @@
+import { env } from "@config/env.js";
 import AuthRepository from "./repository.js";
 import { AuthHandler } from "@modules/auth_handler";
 import { PasswordHandler } from "@modules/password";
 import { RegisterResult } from "@contracts/auth/register.js";
 import type { UserRole } from "@custom_types/userroles";
-import { env } from "@config/env.js";
-
-type PatientProfileData = {
-    email: string;
-    phone?: string | null | undefined;
-    first_name: string;
-    last_name: string;
-    patronymic?: string | null | undefined;
-    birth_date: Date;
-    gender: 'M' | 'F';
-};
+import type { VolatilePatientInfo } from "@custom_types/volatilepatientinfo.js";
+import type { HTTPClient } from "@modules/client/index.js";
 
 export default class AuthService {
-    constructor(private repo: AuthRepository) {}
+    constructor(private repo: AuthRepository, private usersClient: HTTPClient) {}
 
-    async register(name: string, pass: string, role: 'P' | 'D' | 'A', profileData?: PatientProfileData): Promise<{
+    async register(name: string, pass: string, role: 'P' | 'D' | 'A', profileData?: VolatilePatientInfo): Promise<{
         result: RegisterResult,
         userId: string | null
     }> {
@@ -36,24 +28,14 @@ export default class AuthService {
                     user_name: name,
                     user_role: 'P' as UserRole,
                 });
-                await fetch(`${env.USERS_SERVICE_URL}/users/patients/update`, {
-                    method: 'POST',
+                this.usersClient.post('/users/patients/update', profileData, {
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${accessToken}`,
-                    },
-                    body: JSON.stringify({
-                        email: profileData.email,
-                        phone: profileData.phone ?? null,
-                        first_name: profileData.first_name,
-                        last_name: profileData.last_name,
-                        patronymic: profileData.patronymic ?? null,
-                        birth_date: profileData.birth_date,
-                        gender: profileData.gender,
-                    }),
+                        "Authorization": `Bearer ${accessToken}`
+                    }
                 });
             } catch (err) {
-                console.error('Failed to create patient profile in users-service:', err);
+                await this.repo.deleteUser(userId).catch(() => {});
+                return { result: RegisterResult.Error, userId: null };
             }
         }
 
