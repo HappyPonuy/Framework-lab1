@@ -49,7 +49,7 @@
     "skipLibCheck": true,
     "esModuleInterop": true
   },
-  "include": ["src", "environment.d.ts", "../../packages/shared"],
+  "include": ["src", "environment.d.ts", "../../packages/shared", "src/**/*.json"],
   "tsc-alias": {
     "resolveFullPaths": true,
     "verbose": false
