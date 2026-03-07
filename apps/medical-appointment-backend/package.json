@@ -6,6 +6,7 @@
     "dev": "cross-env NODE_ENV=development tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
     "start": "cross-env NODE_ENV=production node dist/index.js",
+    "swagger": "tsx src/services/auth/swagger.ts && tsx src/services/users/swagger.ts && tsx src/services/appointments/swagger.ts",
     "type-check": "tsc --noEmit"
   },
   "keywords": [],

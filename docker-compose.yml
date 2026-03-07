@@ -104,6 +104,19 @@ services:
     ports:
       - "3003:3003"
 
+  docs-service:
+    build:
+      context: .
+      dockerfile: apps/medical-appointment-backend/Dockerfile
+      args:
+        SERVICE: docs
+    environment:
+      NODE_ENV: production
+      PROXY_URL: http://localhost
+      PORT: 3000
+    ports:
+      - "3000:3000"
+
   frontend:
     build:
       context: .
