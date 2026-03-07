@@ -16,8 +16,8 @@ const activeMap = {
 
 function AdminPageContent() {
     const { user, logout } = useAuth()
-    const { doctors, appointments, patients, loading, error, deleteAppointment } = useAdmin()
-    const { toast, hideToast, withErrorToast } = useToast()
+    const { doctors, appointments, patients, loading, error } = useAdmin()
+    const { toast, hideToast } = useToast() 
 
     const [activeTab, setActiveTab] = useState<'overview' | 'doctors' | 'appointments'>('overview')
 
