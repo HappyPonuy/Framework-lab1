@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react'
-import { useAuth } from '../content/AuthContext.tsx'
-import { usePatient, PatientProvider } from '../content/PatientContext.tsx'
+import { useState, useMemo, useEffect } from 'react'
+import { observer } from 'mobx-react-lite'
+import { useNavigate } from 'react-router-dom'
+import { useAuthStore, usePatientStore } from '../stores/StoreContext.tsx'
 import { generateTimeSlots } from '../api/patientApi.ts'
 import type { DoctorInfo } from '../types/patient.types.ts'
 import { progressClass } from '../utils/appointmentStatus.ts'
@@ -10,10 +11,10 @@ import { useToast } from '../hooks/useToast.ts'
 import { MedLogo } from '../components/MedLogo.tsx'
 import { UserAvatar } from '../components/UserAvatar.tsx'
 
-function HomePageContent() {
-    const { user, logout } = useAuth()
-    const { patient, appointments, doctors, loading, error, bookAppointment, cancelAppointment, updateProfile } = usePatient()
-
+const HomePage = observer(function HomePage() {
+    const authStore = useAuthStore()
+    const patientStore = usePatientStore()
+    const navigate = useNavigate()
     const { toast, showSuccess, hideToast, withErrorToast } = useToast()
 
     const [activeTab, setActiveTab] = useState<'appointments' | 'doctors' | 'profile'>('appointments')
@@ -26,6 +27,22 @@ function HomePageContent() {
     const [showEditModal, setShowEditModal] = useState(false)
     const [editForm, setEditForm] = useState<Omit<UpdatePatientDto, 'birth_date'> & { birth_date: string } | null>(null)
     const [saving, setSaving] = useState(false)
+
+    const { patient, appointments, doctors, loading, doctorsLoading, error } = patientStore
+
+    useEffect(() => {
+        const userId = authStore.user?.id
+        if (userId) {
+            patientStore.setUserId(userId)
+            void patientStore.load()
+        }
+    }, [authStore.user?.id, patientStore])
+
+    useEffect(() => {
+        if (activeTab === 'doctors') {
+            void patientStore.loadDoctors()
+        }
+    }, [activeTab, patientStore])
 
     const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
 
@@ -43,6 +60,24 @@ function HomePageContent() {
         return slots
     }, [selectedDoctor, selectedDate, todayStr])
 
+    const todayHasSlots = useMemo(() => {
+        if (!selectedDoctor) return true
+        const slots = generateTimeSlots(selectedDoctor.shift_start, selectedDoctor.shift_end, selectedDoctor.slot_minutes)
+        const now = new Date()
+        const nowMinutes = now.getHours() * 60 + now.getMinutes()
+        return slots.some(t => {
+            const [h, m] = t.split(':').map(Number)
+            return h * 60 + m > nowMinutes
+        })
+    }, [selectedDoctor])
+
+    const minDate = useMemo(() => {
+        if (todayHasSlots) return todayStr
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        return tomorrow.toISOString().split('T')[0]
+    }, [todayHasSlots, todayStr])
+
     const tabs = [
         { key: 'appointments', label: 'Мои записи' },
         { key: 'doctors',      label: 'Врачи' },
@@ -51,7 +86,17 @@ function HomePageContent() {
 
     const handleBook = (doctor: DoctorInfo) => {
         setSelectedDoctor(doctor)
-        setSelectedDate(todayStr)
+        const slots = generateTimeSlots(doctor.shift_start, doctor.shift_end, doctor.slot_minutes)
+        const now = new Date()
+        const nowMinutes = now.getHours() * 60 + now.getMinutes()
+        const hasSlots = slots.some(t => {
+            const [h, m] = t.split(':').map(Number)
+            return h * 60 + m > nowMinutes
+        })
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        const initialDate = hasSlots ? todayStr : tomorrow.toISOString().split('T')[0]
+        setSelectedDate(initialDate)
         setSelectedTime('')
         setPatientNotes('')
         setShowBookingModal(true)
@@ -69,7 +114,7 @@ function HomePageContent() {
                 start_time:    startTime,
                 patient_notes: patientNotes.trim() || null,
             }
-            await bookAppointment(dto)
+            await patientStore.bookAppointment(dto)
             return true
         })
         setBooking(false)
@@ -80,7 +125,7 @@ function HomePageContent() {
     }
 
     const handleCancelAppointment = async (id: string) => {
-        await withErrorToast(() => cancelAppointment(id))
+        await withErrorToast(() => patientStore.cancelAppointment(id))
     }
 
     const handleOpenEdit = () => {
@@ -108,7 +153,7 @@ function HomePageContent() {
         const result = await withErrorToast(async () => {
             const birthDate = new Date(editForm.birth_date)
             if (isNaN(birthDate.getTime())) throw new Error('Некорректная дата рождения')
-            await updateProfile({ ...editForm, birth_date: birthDate })
+            await patientStore.updateProfile({ ...editForm, birth_date: birthDate })
             return true
         })
         setSaving(false)
@@ -120,10 +165,10 @@ function HomePageContent() {
 
     const initials = patient
         ? `${patient.last_name[0] ?? ''}${patient.first_name[0] ?? ''}`.toUpperCase()
-        : user?.username?.slice(0, 2).toUpperCase() ?? '??'
+        : authStore.user?.username?.slice(0, 2).toUpperCase() ?? '??'
     const displayName = patient
         ? `${patient.last_name} ${patient.first_name} ${patient.patronymic ?? ''}`.trim()
-        : user?.username ?? ''
+        : authStore.user?.username ?? ''
 
     if (loading) {
         return (
@@ -163,7 +208,7 @@ function HomePageContent() {
                             : <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-semibold text-white">{initials}</div>
                         }
                         <button
-                            onClick={() => logout()}
+                            onClick={() => authStore.logout(navigate)}
                             className="text-xs text-slate-400 hover:text-red-500 transition"
                         >
                             Выйти
@@ -176,7 +221,7 @@ function HomePageContent() {
 
                 <div className="mb-6">
                     <h1 className="text-xl font-bold text-slate-900">
-                        Добро пожаловать, {patient?.first_name ?? user?.username}
+                        Добро пожаловать, {patient?.first_name ?? authStore.user?.username}
                     </h1>
                     <p className="text-sm text-slate-500 mt-0.5">Управляйте своими записями к врачу</p>
                 </div>
@@ -184,8 +229,8 @@ function HomePageContent() {
                 <div className="grid grid-cols-3 gap-3 mb-6">
                     {[
                         { label: 'Всего записей',    value: appointments.length, color: 'text-blue-600' },
-                        { label: 'С заметками врача', value: appointments.filter(a => a.doctor_notes).length, color: 'text-green-600' },
-                        { label: 'Врачей доступно',  value: doctors.filter(d => d.is_active).length, color: 'text-indigo-600' },
+                        { label: 'С заметками врача', value: patientStore.appointmentsWithNotesCount, color: 'text-green-600' },
+                        { label: 'Врачей доступно',  value: patientStore.activeDoctorsCount, color: 'text-indigo-600' },
                     ].map(stat => (
                         <div key={stat.label} className="bg-white rounded-2xl p-4 shadow-sm shadow-blue-900/5 border border-blue-50">
                             <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
@@ -277,7 +322,11 @@ function HomePageContent() {
 
                 {activeTab === 'doctors' && (
                     <div className="grid sm:grid-cols-2 gap-3">
-                        {doctors.length === 0 ? (
+                        {doctorsLoading ? (
+                            <div className="col-span-2 bg-white rounded-2xl p-8 text-center border border-blue-50">
+                                <p className="text-slate-400 text-sm">Загрузка врачей...</p>
+                            </div>
+                        ) : doctors.length === 0 ? (
                             <div className="col-span-2 bg-white rounded-2xl p-8 text-center border border-blue-50">
                                 <p className="text-slate-400 text-sm">Врачи не найдены</p>
                             </div>
@@ -318,43 +367,43 @@ function HomePageContent() {
                 {activeTab === 'profile' && (
                     patient ? (
                         <div className="bg-white rounded-2xl p-6 shadow-sm border border-blue-50 max-w-md space-y-5">
-                        <div className="flex items-center gap-4">
-                            <UserAvatar firstName={patient.first_name} lastName={patient.last_name} size="xl" className="rounded-2xl shadow shadow-blue-600/30" />
-                            <div>
-                                <p className="font-semibold text-slate-800">{displayName || '—'}</p>
-                                <p className="text-sm text-slate-400">{patient.email ?? '—'}</p>
-                            </div>
-                        </div>
-                        <div className="space-y-3">
-                            {[
-                                { label: 'Фамилия',        value: patient.last_name ?? '—' },
-                                { label: 'Имя',            value: patient.first_name ?? '—' },
-                                { label: 'Отчество',       value: patient.patronymic ?? '—' },
-                                { label: 'Email',          value: patient.email ?? '—' },
-                                { label: 'Телефон',        value: patient.phone ?? '—' },
-                                {
-                                    label: 'Дата рождения',
-                                    value: (() => {
-                                        const d = patient.birth_date ? new Date(patient.birth_date) : null
-                                        return d && !isNaN(d.getTime())
-                                            ? d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
-                                            : '—'
-                                    })(),
-                                },
-                                { label: 'Пол', value: patient.gender === 'M' ? 'Мужской' : patient.gender === 'F' ? 'Женский' : '—' },
-                            ].map(field => (
-                                <div key={field.label} className="flex flex-col gap-0.5">
-                                    <span className="text-xs text-slate-400 uppercase tracking-wide">{field.label}</span>
-                                    <span className="text-sm font-medium text-slate-700">{field.value}</span>
+                                <div className="flex items-center gap-4">
+                                    <UserAvatar firstName={patient.first_name} lastName={patient.last_name} size="xl" className="rounded-2xl shadow shadow-blue-600/30" />
+                                    <div>
+                                        <p className="font-semibold text-slate-800">{displayName || '—'}</p>
+                                        <p className="text-sm text-slate-400">{patient.email ?? '—'}</p>
+                                    </div>
                                 </div>
-                            ))}
+                                <div className="space-y-3">
+                                    {[
+                                        { label: 'Фамилия',        value: patient.last_name ?? '—' },
+                                        { label: 'Имя',            value: patient.first_name ?? '—' },
+                                        { label: 'Отчество',       value: patient.patronymic ?? '—' },
+                                        { label: 'Email',          value: patient.email ?? '—' },
+                                        { label: 'Телефон',        value: patient.phone ?? '—' },
+                                        {
+                                            label: 'Дата рождения',
+                                            value: (() => {
+                                                const d = patient.birth_date ? new Date(patient.birth_date) : null
+                                                return d && !isNaN(d.getTime())
+                                                    ? d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+                                                    : '—'
+                                            })(),
+                                        },
+                                        { label: 'Пол', value: patient.gender === 'M' ? 'Мужской' : patient.gender === 'F' ? 'Женский' : '—' },
+                                    ].map(field => (
+                                        <div key={field.label} className="flex flex-col gap-0.5">
+                                            <span className="text-xs text-slate-400 uppercase tracking-wide">{field.label}</span>
+                                            <span className="text-sm font-medium text-slate-700">{field.value}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={handleOpenEdit}
+                                    className="w-full rounded-xl border border-blue-200 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition">
+                                    Редактировать профиль
+                                </button>
                         </div>
-                        <button
-                            onClick={handleOpenEdit}
-                            className="w-full rounded-xl border border-blue-200 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition">
-                            Редактировать профиль
-                        </button>
-                    </div>
                     ) : (
                         <div className="bg-white rounded-2xl p-8 text-center border border-blue-50">
                             <p className="text-slate-400 text-sm">Данные профиля не загружены</p>
@@ -376,7 +425,7 @@ function HomePageContent() {
                                 <input
                                     type="date"
                                     value={selectedDate}
-                                    min={todayStr}
+                                    min={minDate}
                                     onChange={e => { setSelectedDate(e.target.value); setSelectedTime('') }}
                                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
                                 />
@@ -481,12 +530,6 @@ function HomePageContent() {
         {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
         </>
     )
-}
+})
 
-export default function HomePage() {
-    return (
-        <PatientProvider>
-            <HomePageContent />
-        </PatientProvider>
-    )
-}
+export default HomePage

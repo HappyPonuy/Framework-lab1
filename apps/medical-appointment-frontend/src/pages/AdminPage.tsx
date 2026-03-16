@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { useAuth } from '../content/AuthContext.tsx'
-import { useAdmin, AdminProvider } from '../content/AdminContext.tsx'
+import { useState, useEffect } from 'react'
+import { observer } from 'mobx-react-lite'
+import { useNavigate } from 'react-router-dom'
+import { useAuthStore, useAdminStore } from '../stores/StoreContext.tsx'
 import { progressClass } from '../utils/appointmentStatus.ts'
 import { Toast } from '../components/Toast.tsx'
 import { useToast } from '../hooks/useToast.ts'
@@ -12,21 +13,25 @@ const activeMap = {
     inactive: { label: 'Неактивен', className: 'bg-slate-100 text-slate-400 border border-slate-200' },
 }
 
-
-
-function AdminPageContent() {
-    const { user, logout } = useAuth()
-    const { doctors, appointments, patients, loading, error } = useAdmin()
-    const { toast, hideToast } = useToast() 
+const AdminPage = observer(function AdminPage() {
+    const authStore = useAuthStore()
+    const adminStore = useAdminStore()
+    const navigate = useNavigate()
+    const { toast, hideToast } = useToast()
 
     const [activeTab, setActiveTab] = useState<'overview' | 'doctors' | 'appointments'>('overview')
+
+    useEffect(() => {
+        void adminStore.load()
+    }, [adminStore])
+
+    const { doctors, appointments, patients, loading, error } = adminStore
 
     const tabs = [
         { key: 'overview',     label: 'Обзор' },
         { key: 'doctors',      label: 'Врачи' },
         { key: 'appointments', label: 'Записи' },
     ] as const
-
 
     if (loading) {
         return (
@@ -58,8 +63,8 @@ function AdminPageContent() {
                         <span className="ml-1 text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">Администратор</span>
                     </div>
                     <div className="flex items-center gap-3">
-                        <span className="hidden sm:block text-xs font-medium text-slate-700">{user?.username}</span>
-                        <button onClick={() => logout()} className="text-xs text-slate-400 hover:text-red-500 transition">Выйти</button>
+                        <span className="hidden sm:block text-xs font-medium text-slate-700">{authStore.user?.username}</span>
+                        <button onClick={() => authStore.logout(navigate)} className="text-xs text-slate-400 hover:text-red-500 transition">Выйти</button>
                     </div>
                 </div>
             </header>
@@ -92,7 +97,7 @@ function AdminPageContent() {
                             {[
                                 { label: 'Всего врачей',    value: doctors.length, color: 'text-blue-600' },
                                 { label: 'Записей всего',   value: appointments.length, color: 'text-slate-700' },
-                                { label: 'Активных врачей', value: doctors.filter(d => d.is_active).length, color: 'text-green-600' },
+                                { label: 'Активных врачей', value: adminStore.activeDoctorsCount, color: 'text-green-600' },
                             ].map(s => (
                                 <div key={s.label} className="bg-white rounded-2xl p-4 shadow-sm border border-blue-50">
                                     <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -221,12 +226,6 @@ function AdminPageContent() {
         {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
         </>
     )
-}
+})
 
-export default function AdminPage() {
-    return (
-        <AdminProvider>
-            <AdminPageContent />
-        </AdminProvider>
-    )
-}
+export default AdminPage

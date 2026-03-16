@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useAuth } from '../content/AuthContext.tsx'
-import { useDoctor, DoctorProvider } from '../content/DoctorContext.tsx'
+import { observer } from 'mobx-react-lite'
+import { useNavigate } from 'react-router-dom'
+import { useAuthStore, useDoctorStore } from '../stores/StoreContext.tsx'
 import type { DoctorAppointment } from '../types/doctor.types.ts'
 import { progressClass } from '../utils/appointmentStatus.ts'
 import { Toast } from '../components/Toast.tsx'
@@ -20,16 +21,26 @@ function formatDateTime(date: Date | string): string {
     return new Date(date).toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 }
 
-
-function DoctorPageContent() {
-    const { logout } = useAuth()
-    const { doctor, schedule, appointments, todayAppointments, patients, loading, error, updateNotes } = useDoctor()
+const DoctorPage = observer(function DoctorPage() {
+    const authStore = useAuthStore()
+    const doctorStore = useDoctorStore()
+    const navigate = useNavigate()
     const { toast, showSuccess, hideToast, withErrorToast } = useToast()
 
     const [activeTab, setActiveTab] = useState<'today' | 'schedule' | 'profile'>('today')
     const [selectedAppointment, setSelectedAppointment] = useState<DoctorAppointment | null>(null)
     const [notesInput, setNotesInput] = useState('')
     const [savingNotes, setSavingNotes] = useState(false)
+
+    useEffect(() => {
+        const userId = authStore.user?.id
+        if (userId) {
+            doctorStore.setUserId(userId)
+            void doctorStore.load()
+        }
+    }, [authStore.user?.id, doctorStore])
+
+    const { doctor, schedule, appointments, todayAppointments, patients, loading, error } = doctorStore
 
     const tabs = [
         { key: 'today',    label: 'Сегодня' },
@@ -47,7 +58,7 @@ function DoctorPageContent() {
         const notes = notesInput
         setSavingNotes(true)
         const result = await withErrorToast(() =>
-            updateNotes({ appointment_id: selectedAppointment.id, doctor_notes: notes })
+            doctorStore.updateNotes({ appointment_id: selectedAppointment.id, doctor_notes: notes })
                 .then(() => true)
         )
         setSavingNotes(false)
@@ -99,7 +110,7 @@ function DoctorPageContent() {
                             ? <UserAvatar firstName={doctor.first_name} lastName={doctor.last_name} size="sm" className="rounded-xl shadow shadow-blue-600/20" />
                             : <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">??</div>
                         }
-                        <button onClick={() => logout()} className="text-xs text-slate-400 hover:text-red-500 transition cursor-pointer">Выйти</button>
+                        <button onClick={() => authStore.logout(navigate)} className="text-xs text-slate-400 hover:text-red-500 transition cursor-pointer">Выйти</button>
                     </div>
                 </div>
             </header>
@@ -340,12 +351,6 @@ function DoctorPageContent() {
         {toast && <Toast message={toast.message} type={toast.type} onClose={hideToast} />}
         </>
     )
-}
+})
 
-export default function DoctorPage() {
-    return (
-        <DoctorProvider>
-            <DoctorPageContent />
-        </DoctorProvider>
-    )
-}
+export default DoctorPage
