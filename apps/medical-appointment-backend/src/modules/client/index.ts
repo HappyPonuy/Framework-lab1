@@ -17,20 +17,28 @@ export class HTTPClient {
     }
 
     async get(path: string, options?: RequestInit) {
+        const { headers: extraHeaders, ...restOptions } = options ?? {};
         const response = await fetch(`${this.baseURL}${path}`, {
             method: "GET",
-            headers: this.defaultHeaders,
-            ...options,
+            headers: {
+                ...this.defaultHeaders,
+                ...(extraHeaders as Record<string, string>),
+            },
+            ...restOptions,
         });
         return this.parseResponse(response);
     }
 
     async post(path: string, body: any, options?: RequestInit) {
+        const { headers: extraHeaders, ...restOptions } = options ?? {};
         const response = await fetch(`${this.baseURL}${path}`, {
             method: "POST",
-            headers: this.defaultHeaders,
+            headers: {
+                ...this.defaultHeaders,
+                ...(extraHeaders as Record<string, string>),  // мержим заголовки
+            },
             body: JSON.stringify(body),
-            ...options,
+            ...restOptions,
         });
         return this.parseResponse(response);
     }

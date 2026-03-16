@@ -28,7 +28,7 @@ export default class AuthService {
                     user_name: name,
                     user_role: 'P' as UserRole,
                 });
-                this.usersClient.post('/users/patients/update', profileData, {
+                await this.usersClient.post('/users/patients/update', profileData, {
                     headers: {
                         "Authorization": `Bearer ${accessToken}`
                     }
