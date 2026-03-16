@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { RegisterFormValues } from '../types/auth.types.ts';
-import { useAuth as useAuthContext } from '../content/AuthContext.tsx';
+import { useAuthStore } from '../stores/StoreContext.tsx';
 
 export function useAuth() {
-    const { login: ctxLogin, logout: ctxLogout, register: ctxRegister } = useAuthContext();
+    const authStore = useAuthStore();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -14,7 +14,7 @@ export function useAuth() {
         setLoading(true);
         setError(null);
         try {
-            const result = await ctxLogin(username, password);
+            const result = await authStore.login(username, password);
             if (result.success) {
                 navigate('/');
             } else {
@@ -33,7 +33,7 @@ export function useAuth() {
         setError(null);
         setSuccessMessage(null);
         try {
-            const result = await ctxRegister(data);
+            const result = await authStore.register(data);
             if (result.success) {
                 setSuccessMessage('Регистрация прошла успешно! Войдите в систему.');
                 navigate('/auth');
@@ -49,7 +49,7 @@ export function useAuth() {
     };
 
     const logout = async () => {
-        await ctxLogout();
+        await authStore.logout(navigate);
     };
 
     const clearError = () => { setError(null); setSuccessMessage(null); };
