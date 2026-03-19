@@ -1,62 +1,46 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import type { DoctorProfile, DoctorSchedule, DoctorAppointment, UpdateDoctorNotesDto, DoctorContextType } from '../types/doctor.types.ts';
-import type { PatientInfo } from '@shared/types/data/patientinfo.ts';
-import { createDoctorApi } from '../api/doctorApi.ts';
-import { useApi } from '../hooks/useApi.ts';
+import { createContext, useCallback, useContext } from 'react';
+import type { DoctorContextType, DoctorSchedule, UpdateDoctorNotesDto } from '../types/doctor.types.ts';
 import { useAuth } from './AuthContext.tsx';
+import {
+    useGetDoctorProfileQuery,
+    useGetAppointmentsQuery,
+    useGetAllPatientsQuery,
+    useCompleteAppointmentMutation,
+    medApi,
+} from '../store/api.ts';
+import { useAppDispatch } from '../store/hooks.ts';
 
 const DoctorContext = createContext<DoctorContextType | null>(null);
 
 export function DoctorProvider({ children }: { children: React.ReactNode }) {
-    const { api } = useApi();
     const { user } = useAuth();
-    const doctorApi = useMemo(() => createDoctorApi(api), [api]);
-    const doctorApiRef = useRef(doctorApi);
-    doctorApiRef.current = doctorApi;
-    const userRef = useRef(user);
-    userRef.current = user;
+    const dispatch = useAppDispatch();
 
-    const [doctor, setDoctor]             = useState<DoctorProfile | null>(null);
-    const [schedule, setSchedule]         = useState<DoctorSchedule | null>(null);
-    const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
-    const [patients, setPatients]         = useState<PatientInfo[]>([]);
-    const [loading, setLoading]           = useState(true);
-    const [error, setError]               = useState<string | null>(null);
+    const { data: doctor = null, isLoading: loadingProfile, error: profileError } =
+        useGetDoctorProfileQuery(user?.id ?? '', { skip: !user });
+    const { data: appointments = [], isLoading: loadingAppointments } =
+        useGetAppointmentsQuery();
+    const { data: patients = [], isLoading: loadingPatients } =
+        useGetAllPatientsQuery();
 
-    const load = useCallback(async () => {
-        if (!userRef.current) { setLoading(false); return; }
-        setLoading(true);
-        setError(null);
-        try {
-            const [profileData, appointmentsData, patientsData] = await Promise.all([
-                doctorApiRef.current.fetchProfile(userRef.current.id),
-                doctorApiRef.current.fetchAppointments(),
-                doctorApiRef.current.fetchPatients(),
-            ]);
-            setDoctor(profileData);
+    const [completeAppointmentMut] = useCompleteAppointmentMutation();
 
-            const scheduleData: DoctorSchedule = {
-                work_days: profileData.work_days,
-                shift_start: profileData.shift_start,
-                shift_end: profileData.shift_end,
-                slot_minutes: profileData.slot_minutes
-            };
-            setSchedule(scheduleData);
+    const loading = loadingProfile || loadingAppointments || loadingPatients;
+    const error   = profileError
+        ? ((profileError as { data?: { error?: string } }).data?.error ?? 'Ошибка загрузки профиля')
+        : null;
 
-            setAppointments(Array.isArray(appointmentsData) ? appointmentsData : []);
-            setPatients(Array.isArray(patientsData) ? patientsData : []);
-        } catch (err: unknown) {
-            const e = err as { message?: string };
-            setError(e.message ?? 'Ошибка загрузки данных');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const schedule: DoctorSchedule | null = doctor
+        ? {
+            work_days:    doctor.work_days,
+            shift_start:  doctor.shift_start,
+            shift_end:    doctor.shift_end,
+            slot_minutes: doctor.slot_minutes,
+          }
+        : null;
 
-    useEffect(() => { load(); }, [load]);
-
-    const todayAppointments = appointments.filter(a => {
-        const d = new Date(a.start_time);
+    const todayAppointments = (Array.isArray(appointments) ? appointments : []).filter(a => {
+        const d   = new Date(a.start_time);
         const now = new Date();
         return d.getFullYear() === now.getFullYear()
             && d.getMonth()    === now.getMonth()
@@ -64,18 +48,24 @@ export function DoctorProvider({ children }: { children: React.ReactNode }) {
     });
 
     const updateNotes = useCallback(async (dto: UpdateDoctorNotesDto) => {
-        const updatedAppt = await doctorApiRef.current.updateAppointmentNotes(dto);
-        setAppointments(prev =>
-            prev.map(a => a.id === dto.appointment_id ? updatedAppt : a)
-        );
-    }, []);
+        await completeAppointmentMut(dto).unwrap();
+    }, [completeAppointmentMut]);
+
+    const refresh = useCallback(async () => {
+        dispatch(medApi.util.invalidateTags(['DoctorProfile', 'Appointments', 'Patients']));
+    }, [dispatch]);
 
     return (
         <DoctorContext.Provider value={{
-            doctor, schedule, appointments, todayAppointments, patients,
-            loading, error,
+            doctor:             doctor ?? null,
+            schedule,
+            appointments:       Array.isArray(appointments) ? appointments : [],
+            todayAppointments,
+            patients:           Array.isArray(patients)     ? patients     : [],
+            loading,
+            error,
             updateNotes,
-            refresh: load,
+            refresh,
         }}>
             {children}
         </DoctorContext.Provider>
